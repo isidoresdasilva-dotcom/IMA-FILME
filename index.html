@@ -34,8 +34,9 @@
         <button>⭐ Favoritos</button>
 
         <hr>
-
-        <button class="enviar">📤 Enviar Filme</button>
+<button class="enviar" id="botaoEnviarMenu">
+    📤 Enviar Filme
+</button>
         <button>🗂️ Minha Biblioteca</button>
 
         <div class="espaco"></div>
@@ -58,10 +59,16 @@
                     A sua biblioteca digital para guardar,
                     organizar e compartilhar seus vídeos.
                 </p>
+<button class="botao-principal" id="botaoEnviar">
+    📤 Enviar primeiro filme
+</button>
 
-                <button class="botao-principal">
-                    📤 Enviar primeiro filme
-                </button>
+<input
+    type="file"
+    id="arquivoVideo"
+    accept="video/*"
+    hidden
+>
             </div>
 
         </section>
