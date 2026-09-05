@@ -1,258 +1,1354 @@
+/* =========================================================
+   I.M.A FILMES
+   STYLE.CSS COMPLETO
+   ========================================================= */
+
+/* ---------- RESET ---------- */
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body {
-    font-family: Arial, sans-serif;
-    background: #0b0b0f;
-    color: white;
+html {
+    scroll-behavior: smooth;
 }
+
+body {
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #08090d;
+    color: #ffffff;
+    overflow-x: hidden;
+}
+
+/* ---------- CORES ---------- */
+
+:root {
+    --fundo: #08090d;
+    --menu: #0d0f14;
+    --painel: #11141b;
+    --painel2: #171b23;
+    --painel3: #20252f;
+    --borda: #2b313d;
+
+    --branco: #ffffff;
+    --cinza: #a6adb9;
+    --cinza2: #727a88;
+
+    --vermelho: #e50914;
+    --vermelho-escuro: #b20710;
+
+    --amarelo: #ffb000;
+    --verde: #19c878;
+}
+
+/* =========================================================
+   CABEÇALHO
+   ========================================================= */
 
 .topo {
-    height: 70px;
-    background: #15151d;
+    position: sticky;
+    top: 0;
+    z-index: 900;
+
+    width: 100%;
+    min-height: 72px;
+
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0 25px;
-    border-bottom: 1px solid #292936;
+    gap: 24px;
+
+    padding: 0 24px;
+
+    background: rgba(17, 20, 27, 0.97);
+    border-bottom: 1px solid var(--borda);
+
+    backdrop-filter: blur(10px);
 }
 
+/* LOGO */
+
 .logo {
+    flex-shrink: 0;
+
+    color: #ffffff;
+
     font-size: 22px;
-    font-weight: bold;
+    font-weight: 800;
+
+    white-space: nowrap;
+    letter-spacing: 0.3px;
 }
 
 .logo span {
-    color: #e50914;
+    color: var(--vermelho);
 }
 
+/* =========================================================
+   PESQUISA
+   ========================================================= */
+
 .pesquisa {
-    background: #22222c;
-    border-radius: 8px;
-    padding: 10px 15px;
-    width: 40%;
+    flex: 1;
+
+    width: 100%;
+    max-width: 620px;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 11px 15px;
+
+    background: var(--painel3);
+
+    border: 1px solid var(--borda);
+    border-radius: 10px;
 }
 
 .pesquisa input {
-    background: transparent;
+    width: 100%;
+
     border: none;
     outline: none;
-    color: white;
-    width: 90%;
+
+    background: transparent;
+
+    color: #ffffff;
+
     font-size: 15px;
 }
 
+.pesquisa input::placeholder {
+    color: var(--cinza2);
+}
+
+/* =========================================================
+   BOTÕES DO TOPO
+   ========================================================= */
+
 .acoes {
+    margin-left: auto;
+
     display: flex;
-    gap: 10px;
-}
-
-.acoes button,
-.menu button,
-.titulo-secao button,
-.botoes button {
-    border: none;
-    cursor: pointer;
-}
-
-.acoes button {
-    background: #22222c;
-    color: white;
-    padding: 10px;
-    border-radius: 8px;
-}
-
-.estrutura {
-    display: flex;
-    min-height: calc(100vh - 70px);
-}
-
-.menu {
-    width: 230px;
-    background: #121219;
-    padding: 20px 15px;
-    display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 8px;
 }
 
-.menu button {
-    text-align: left;
-    padding: 13px;
-    border-radius: 8px;
-    background: transparent;
-    color: #ccc;
-    font-size: 15px;
+.acoes button {
+    width: 42px;
+    height: 42px;
+
+    border: 1px solid var(--borda);
+    border-radius: 10px;
+
+    background: var(--painel3);
+
+    color: #ffffff;
+
+    font-size: 17px;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
 }
 
-.menu button:hover,
-.menu .menu-ativo {
-    background: #e50914;
-    color: white;
+.acoes button:hover {
+    background: var(--vermelho);
+    border-color: var(--vermelho);
+
+    transform: translateY(-2px);
 }
+
+/* =========================================================
+   ESTRUTURA PRINCIPAL
+   ========================================================= */
+
+.estrutura {
+    min-height: calc(100vh - 72px);
+
+    display: flex;
+}
+
+/* =========================================================
+   MENU LATERAL
+   ========================================================= */
+
+.menu {
+    position: sticky;
+    top: 72px;
+
+    width: 245px;
+    min-width: 245px;
+
+    height: calc(100vh - 72px);
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 6px;
+
+    padding: 20px 14px;
+
+    background: var(--menu);
+
+    border-right: 1px solid var(--borda);
+
+    overflow-y: auto;
+}
+
+/* BOTÕES DO MENU */
+
+.menu button {
+    width: 100%;
+
+    padding: 13px 14px;
+
+    border: none;
+    border-radius: 9px;
+
+    background: transparent;
+
+    color: #c8cdd6;
+
+    text-align: left;
+
+    font-size: 14px;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.menu button:hover {
+    background: #252a34;
+    color: #ffffff;
+}
+
+/* MENU ATIVO */
+
+.menu .menu-ativo {
+    background: var(--vermelho);
+    color: #ffffff;
+}
+
+.menu .menu-ativo:hover {
+    background: var(--vermelho-escuro);
+}
+
+/* BOTÃO PUBLICAR */
 
 .menu .enviar {
-    background: #ffb000;
-    color: #111;
-    font-weight: bold;
+    margin: 5px 0;
+
+    background: var(--amarelo);
+
+    color: #111111;
+
+    font-weight: 800;
 }
 
+.menu .enviar:hover {
+    background: #ffc333;
+
+    color: #111111;
+}
+
+/* LINHA */
+
 .menu hr {
+    width: 100%;
+
     border: none;
-    border-top: 1px solid #292936;
+
+    border-top: 1px solid var(--borda);
+
     margin: 10px 0;
 }
+
+/* ESPAÇO */
 
 .espaco {
     flex: 1;
+
+    min-height: 30px;
 }
+
+/* =========================================================
+   CONTEÚDO
+   ========================================================= */
 
 .conteudo {
     flex: 1;
+
+    min-width: 0;
+
     padding: 30px;
 }
 
+/* =========================================================
+   BANNER PRINCIPAL
+   ========================================================= */
+
 .banner {
-    background: linear-gradient(135deg, #e50914, #551111);
-    border-radius: 15px;
-    padding: 45px;
-    margin-bottom: 30px;
+    position: relative;
+
+    min-height: 290px;
+
+    display: flex;
+    align-items: center;
+
+    overflow: hidden;
+
+    margin-bottom: 35px;
+
+    padding: 48px;
+
+    border-radius: 18px;
+
+    background:
+        radial-gradient(
+            circle at 85% 20%,
+            rgba(255,255,255,0.13),
+            transparent 30%
+        ),
+        linear-gradient(
+            135deg,
+            #e50914 0%,
+            #8d0a11 45%,
+            #2b0709 100%
+        );
+
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
 }
+
+/* ÍCONE DECORATIVO */
+
+.banner::after {
+    content: "🎬";
+
+    position: absolute;
+
+    right: 7%;
+    bottom: -30px;
+
+    font-size: 160px;
+
+    opacity: 0.12;
+
+    pointer-events: none;
+}
+
+/* TEXTO PEQUENO */
 
 .pequeno {
-    font-size: 13px;
-    opacity: 0.8;
+    margin-bottom: 10px;
+
+    color: #ffd8d8;
+
+    font-size: 12px;
+
+    font-weight: 800;
+
+    letter-spacing: 2px;
 }
+
+/* TÍTULO */
 
 .banner h1 {
-    font-size: 42px;
-    margin: 10px 0;
+    margin-bottom: 14px;
+
+    font-size: clamp(35px, 5vw, 54px);
+
+    line-height: 1;
 }
 
-.banner p {
-    max-width: 550px;
-    color: #eee;
+/* DESCRIÇÃO */
+
+.banner p:not(.pequeno) {
+    max-width: 620px;
+
+    color: #f4f4f4;
+
+    line-height: 1.6;
 }
+
+/* BOTÃO PRINCIPAL */
 
 .botao-principal {
     margin-top: 25px;
-    padding: 13px 22px;
+
+    padding: 14px 22px;
+
     border: none;
-    border-radius: 8px;
-    background: white;
-    color: #111;
-    font-weight: bold;
+    border-radius: 9px;
+
+    background: #ffffff;
+
+    color: #111111;
+
+    font-size: 14px;
+    font-weight: 800;
+
     cursor: pointer;
+
+    transition: all 0.2s ease;
 }
+
+.botao-principal:hover {
+    transform: translateY(-2px);
+
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+}
+
+/* =========================================================
+   TÍTULO DA SEÇÃO
+   ========================================================= */
 
 .titulo-secao {
     display: flex;
-    justify-content: space-between;
+
     align-items: center;
+
+    justify-content: space-between;
+
+    gap: 15px;
+
     margin-bottom: 20px;
 }
 
-.titulo-secao button {
-    background: transparent;
-    color: #aaa;
+.titulo-secao h2 {
+    font-size: 22px;
 }
+
+.titulo-secao button {
+    border: none;
+
+    background: transparent;
+
+    color: var(--cinza);
+
+    cursor: pointer;
+
+    font-size: 14px;
+}
+
+.titulo-secao button:hover {
+    color: #ffffff;
+}
+
+/* =========================================================
+   ÁREA DOS FILMES
+   ========================================================= */
 
 .filmes {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(210px, 1fr));
+
     gap: 20px;
 }
 
+/* =========================================================
+   CARD
+   ========================================================= */
+
 .card {
-    background: #171720;
-    border-radius: 12px;
+    min-width: 0;
+
     overflow: hidden;
-    padding-bottom: 15px;
+
+    padding-bottom: 12px;
+
+    background: var(--painel);
+
+    border: 1px solid var(--borda);
+
+    border-radius: 13px;
+
+    transition: all 0.25s ease;
 }
 
+.card:hover {
+    transform: translateY(-5px);
+
+    border-color: #454c59;
+
+    box-shadow:
+        0 15px 35px rgba(0,0,0,0.30);
+}
+
+/* =========================================================
+   CAPA
+   ========================================================= */
+
 .capa {
-    height: 230px;
-    background: #252532;
+    width: 100%;
+
+    height: 270px;
+
     display: flex;
-    justify-content: center;
+
     align-items: center;
-    font-size: 60px;
+    justify-content: center;
+
     overflow: hidden;
+
+    background:
+        linear-gradient(
+            135deg,
+            #252a35,
+            #151820
+        );
+
+    color: #737b89;
+
+    font-size: 60px;
+}
+
+.capa img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
 }
 
 .capa video {
     width: 100%;
     height: 100%;
+
     object-fit: cover;
+
+    display: block;
 }
 
+/* =========================================================
+   INFORMAÇÕES DO CARD
+   ========================================================= */
+
 .card h3 {
-    padding: 12px 15px 5px;
+    padding: 13px 14px 5px;
+
     font-size: 16px;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
 }
 
 .card p {
-    padding: 0 15px;
-    color: #888;
+    padding: 0 14px;
+
+    color: var(--cinza);
+
     font-size: 13px;
+
+    line-height: 1.5;
 }
+
+/* =========================================================
+   BOTÕES DOS CARDS
+   ========================================================= */
 
 .botoes {
     display: flex;
-    gap: 8px;
-    padding: 15px;
+
+    gap: 7px;
+
+    padding: 13px 14px 2px;
 }
 
 .botoes button {
-    background: #292936;
-    color: white;
-    border-radius: 7px;
-    padding: 9px 12px;
+    flex: 1;
+
+    min-height: 38px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: var(--painel3);
+
+    color: #ffffff;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
 }
 
 .botoes button:hover {
-    background: #e50914;
+    background: var(--vermelho);
+
+    transform: translateY(-1px);
 }
 
-@media (max-width: 800px) {
+/* =========================================================
+   MODAL DE PUBLICAÇÃO
+   ========================================================= */
+
+.modal {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 2000;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(0,0,0,0.84);
+
+    backdrop-filter: blur(5px);
+}
+
+/* CONTEÚDO DO MODAL */
+
+.modal-conteudo {
+    width: min(650px, 100%);
+
+    max-height: 92vh;
+
+    overflow-y: auto;
+
+    padding: 25px;
+
+    background: #12151c;
+
+    border: 1px solid var(--borda);
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 25px 80px rgba(0,0,0,0.55);
+}
+
+/* CABEÇALHO */
+
+.modal-cabecalho {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 15px;
+}
+
+.modal-cabecalho h2 {
+    font-size: 22px;
+}
+
+/* BOTÃO FECHAR */
+
+.fechar {
+    width: 36px;
+    height: 36px;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: var(--vermelho);
+
+    color: #ffffff;
+
+    font-size: 16px;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.fechar:hover {
+    background: var(--vermelho-escuro);
+
+    transform: rotate(90deg);
+}
+
+/* SUBTÍTULO */
+
+.subtitulo {
+    margin: 8px 0 20px;
+
+    color: var(--cinza);
+}
+
+/* =========================================================
+   FORMULÁRIO
+   ========================================================= */
+
+.modal-conteudo label {
+    display: block;
+
+    margin-top: 15px;
+    margin-bottom: 7px;
+
+    color: #e8eaf0;
+
+    font-size: 14px;
+
+    font-weight: 700;
+}
+
+.modal-conteudo input,
+.modal-conteudo select,
+.modal-conteudo textarea {
+    width: 100%;
+
+    padding: 12px 13px;
+
+    border: 1px solid var(--borda);
+
+    border-radius: 9px;
+
+    outline: none;
+
+    background: #1a1e27;
+
+    color: #ffffff;
+
+    font-family: Arial, Helvetica, sans-serif;
+
+    font-size: 14px;
+
+    transition: border 0.2s ease;
+}
+
+.modal-conteudo input:focus,
+.modal-conteudo select:focus,
+.modal-conteudo textarea:focus {
+    border-color: var(--vermelho);
+}
+
+.modal-conteudo textarea {
+    min-height: 110px;
+
+    resize: vertical;
+}
+
+/* INPUT FILE */
+
+.modal-conteudo input[type="file"] {
+    cursor: pointer;
+}
+
+/* TEXTO PEQUENO */
+
+.modal-conteudo small {
+    display: block;
+
+    margin-top: 7px;
+
+    color: var(--cinza2);
+
+    line-height: 1.5;
+}
+
+/* =========================================================
+   PREVIEW DA CAPA
+   ========================================================= */
+
+.preview-capa {
+    width: 100%;
+
+    height: 220px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+
+    margin-top: 10px;
+
+    border: 2px dashed #3b424f;
+
+    border-radius: 10px;
+
+    color: #747c8a;
+
+    text-align: center;
+
+    background: #0d1016;
+}
+
+.preview-capa img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
+}
+
+/* =========================================================
+   ÁREA DA SÉRIE
+   ========================================================= */
+
+.area-serie {
+    display: none;
+
+    margin-top: 18px;
+
+    padding: 16px;
+
+    border: 1px solid var(--borda);
+
+    border-radius: 11px;
+
+    background: #0e1117;
+}
+
+.area-serie h3 {
+    margin-bottom: 5px;
+}
+
+/* TEMPORADA */
+
+.temporada-bloco {
+    margin-top: 15px;
+
+    padding: 14px;
+
+    border: 1px solid var(--borda);
+
+    border-radius: 10px;
+
+    background: #171b23;
+}
+
+.temporada-bloco h4 {
+    margin-bottom: 10px;
+
+    color: var(--amarelo);
+}
+
+/* EPISÓDIO */
+
+.episodio-bloco {
+    margin-top: 12px;
+
+    padding: 12px;
+
+    border-radius: 9px;
+
+    background: #11141b;
+}
+
+/* =========================================================
+   AVISO / REGRAS
+   ========================================================= */
+
+.aviso-conteudo {
+    margin-top: 20px;
+
+    padding: 15px;
+
+    border-left: 4px solid var(--amarelo);
+
+    border-radius: 8px;
+
+    background: rgba(255,176,0,0.08);
+
+    color: #f0f1f4;
+}
+
+.aviso-conteudo p {
+    margin-top: 8px;
+
+    color: #b9bec8;
+
+    line-height: 1.5;
+}
+
+/* =========================================================
+   CHECKBOX
+   ========================================================= */
+
+.check {
+    display: flex !important;
+
+    align-items: flex-start;
+
+    gap: 10px;
+
+    color: #c7ccd5 !important;
+
+    font-weight: 400 !important;
+
+    line-height: 1.5;
+}
+
+.check input {
+    width: auto !important;
+
+    margin-top: 4px;
+
+    cursor: pointer;
+}
+
+/* =========================================================
+   BOTÕES DO FORMULÁRIO
+   ========================================================= */
+
+.acoes-formulario {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 10px;
+
+    margin-top: 25px;
+}
+
+.botao-cancelar,
+.botao-salvar {
+    padding: 12px 20px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.botao-cancelar {
+    background: #292e38;
+
+    color: #ffffff;
+}
+
+.botao-cancelar:hover {
+    background: #3a414d;
+}
+
+.botao-salvar {
+    background: var(--vermelho);
+
+    color: #ffffff;
+}
+
+.botao-salvar:hover {
+    background: var(--vermelho-escuro);
+
+    transform: translateY(-1px);
+}
+
+/* =========================================================
+   PLAYER DE VÍDEO
+   ========================================================= */
+
+.modal-player {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 3000;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(0,0,0,0.94);
+
+    backdrop-filter: blur(5px);
+}
+
+.player-conteudo {
+    position: relative;
+
+    width: min(950px, 100%);
+}
+
+.player-conteudo video {
+    display: block;
+
+    width: 100%;
+
+    max-height: 72vh;
+
+    background: #000000;
+
+    border-radius: 10px;
+}
+
+.player-conteudo h2 {
+    margin-top: 15px;
+
+    font-size: 22px;
+}
+
+.player-conteudo p {
+    margin-top: 7px;
+
+    color: var(--cinza);
+
+    line-height: 1.5;
+}
+
+/* BOTÃO FECHAR PLAYER */
+
+.fechar-player {
+    position: absolute;
+
+    top: 10px;
+    right: 10px;
+
+    z-index: 10;
+
+    width: 40px;
+    height: 40px;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: var(--vermelho);
+
+    color: #ffffff;
+
+    font-size: 18px;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.fechar-player:hover {
+    background: var(--vermelho-escuro);
+
+    transform: rotate(90deg);
+}
+
+/* =========================================================
+   BARRA DE ROLAGEM
+   ========================================================= */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0b0d12;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #363d49;
+
+    border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--vermelho);
+}
+
+/* =========================================================
+   RESPONSIVO — TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
 
     .topo {
-        padding: 0 12px;
+        gap: 12px;
+
+        padding: 10px 15px;
     }
 
     .pesquisa {
-        width: 40%;
+        max-width: 420px;
     }
 
     .menu {
-        width: 70px;
+        width: 210px;
+        min-width: 210px;
+    }
+
+    .conteudo {
+        padding: 22px;
+    }
+
+    .banner {
+        padding: 35px;
+    }
+
+    .filmes {
+        grid-template-columns:
+            repeat(auto-fill, minmax(180px, 1fr));
+    }
+
+    .capa {
+        height: 240px;
+    }
+}
+
+/* =========================================================
+   RESPONSIVO — CELULAR
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    /* TOPO */
+
+    .topo {
+        position: sticky;
+
+        min-height: 65px;
+
+        flex-wrap: wrap;
+
+        padding: 10px 12px;
+
+        gap: 10px;
+    }
+
+    .logo {
+        font-size: 18px;
+    }
+
+    .acoes {
+        margin-left: auto;
+    }
+
+    .acoes button {
+        width: 38px;
+        height: 38px;
+
+        font-size: 15px;
+    }
+
+    /* PESQUISA */
+
+    .pesquisa {
+        order: 3;
+
+        flex-basis: 100%;
+
+        max-width: none;
+
+        width: 100%;
+    }
+
+    /* ESTRUTURA */
+
+    .estrutura {
+        min-height: calc(100vh - 120px);
+
+        display: block;
+    }
+
+    /* MENU INFERIOR */
+
+    .menu {
+        position: fixed;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        top: auto;
+
+        z-index: 1500;
+
+        width: 100%;
+        min-width: 100%;
+
+        height: 65px;
+
+        display: flex;
+
+        flex-direction: row;
+
+        align-items: center;
+
+        gap: 4px;
+
+        padding: 5px;
+
+        overflow-x: auto;
+        overflow-y: hidden;
+
+        background: #0d0f14;
+
+        border-top: 1px solid var(--borda);
+        border-right: none;
     }
 
     .menu button {
-        font-size: 0;
+        flex: 0 0 auto;
+
+        width: auto;
+
+        min-width: 58px;
+
+        padding: 10px 8px;
+
         text-align: center;
+
+        font-size: 0;
     }
 
     .menu button::first-letter {
         font-size: 20px;
     }
 
+    .menu .enviar {
+        margin: 0;
+    }
+
+    .menu hr,
+    .espaco {
+        display: none;
+    }
+
+    /* CONTEÚDO */
+
     .conteudo {
-        padding: 15px;
+        width: 100%;
+
+        padding: 15px 15px 90px;
+    }
+
+    /* BANNER */
+
+    .banner {
+        min-height: 260px;
+
+        padding: 30px 22px;
+
+        border-radius: 15px;
+    }
+
+    .banner::after {
+        font-size: 110px;
+    }
+
+    .banner h1 {
+        font-size: 34px;
+    }
+
+    .banner p:not(.pequeno) {
+        font-size: 14px;
+    }
+
+    .botao-principal {
+        width: 100%;
+    }
+
+    /* FILMES */
+
+    .filmes {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        gap: 12px;
+    }
+
+    .capa {
+        height: 205px;
+
+        font-size: 45px;
+    }
+
+    .card h3 {
+        font-size: 14px;
+    }
+
+    .card p {
+        font-size: 12px;
+    }
+
+    .botoes {
+        gap: 5px;
+
+        padding: 10px;
+    }
+
+    .botoes button {
+        min-height: 35px;
+
+        font-size: 13px;
+    }
+
+    /* MODAL */
+
+    .modal {
+        padding: 10px;
+    }
+
+    .modal-conteudo {
+        max-height: 94vh;
+
+        padding: 18px;
+    }
+
+    .preview-capa {
+        height: 190px;
+    }
+
+    /* BOTÕES FORM */
+
+    .acoes-formulario {
+        flex-direction: column;
+    }
+
+    .botao-cancelar,
+    .botao-salvar {
+        width: 100%;
+    }
+}
+
+/* =========================================================
+   CELULARES PEQUENOS
+   ========================================================= */
+
+@media (max-width: 430px) {
+
+    .logo {
+        font-size: 16px;
+    }
+
+    .filmes {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .capa {
+        height: 175px;
     }
 
     .banner {
-        padding: 30px 20px;
+        min-height: 250px;
+
+        padding: 25px 18px;
     }
 
     .banner h1 {
         font-size: 30px;
     }
 
-    .filmes {
-        grid-template-columns: repeat(2, 1fr);
+    .titulo-secao h2 {
+        font-size: 18px;
+    }
+
+    .modal-conteudo {
+        padding: 15px;
     }
 }
