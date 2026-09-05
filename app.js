@@ -1,14 +1,22 @@
 ```javascript
 /* =========================================================
    I.M.A FILMES
-   APP.JS COMPLETO
-   Sistema de publicação + 5 capas automáticas
+   APP.JS COMPLETO CORRIGIDO
+
+   PUBLICAÇÃO DE FILMES E SÉRIES
+   + 5 CAPAS AUTOMÁTICAS
+   + CAPA MANUAL
+   + PLAYER
+   + DOWNLOAD
+   + PARTILHA
+   + PESQUISA
+
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
-       ELEMENTOS
+       ELEMENTOS DO HTML
        ===================================================== */
 
     const botaoEnviar =
@@ -100,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       ESTADO
+       VARIÁVEIS
        ===================================================== */
 
     let capaURL = null;
@@ -113,17 +121,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let videoTemporarioCapa = null;
 
-    let temporadaDados = [];
-
     let duracaoVideo = 0;
 
     let tempoCapa = 3;
 
     let gerandoCapas = false;
 
+    let temporadaDados = [];
+
+    let publicando = false;
+
+    let geracaoId = 0;
+
 
     /* =====================================================
-       CRIAR ÁREA DAS 5 CAPAS
+       SISTEMA DE CAPAS AUTOMÁTICAS
        ===================================================== */
 
     function criarSistemaCapas() {
@@ -151,8 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         sistema.style.borderRadius = "14px";
 
-        sistema.style.background =
-            "#f4f5f7";
+        sistema.style.background = "#f4f5f7";
 
         sistema.innerHTML = `
 
@@ -161,7 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 font-weight:700;
                 margin-bottom:6px;
             ">
-                🤖 Escolha a melhor capa
+                🤖 Capas automáticas
             </div>
 
             <div
@@ -171,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     margin-bottom:12px;
                 "
             >
-                Escolha um vídeo para gerar capas automaticamente.
+                Escolha um vídeo para gerar as capas.
             </div>
 
             <div
@@ -195,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     font-weight:600;
                     margin-bottom:6px;
                 ">
-                    ⏱️ Escolher outro momento
+                    ⏱️ Escolher outro momento do vídeo
                 </label>
 
                 <input
@@ -215,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         margin-top:5px;
                     "
                 >
-                    3 segundos
+                    0:03
                 </div>
 
                 <button
@@ -236,10 +247,16 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
         `;
 
-        previewCapa.parentNode.insertBefore(
-            sistema,
-            previewCapa.nextSibling
-        );
+        if (
+            previewCapa &&
+            previewCapa.parentNode
+        ) {
+
+            previewCapa.parentNode.insertBefore(
+                sistema,
+                previewCapa.nextSibling
+            );
+        }
 
         const slider =
             sistema.querySelector(
@@ -264,7 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     Number(slider.value);
 
                 textoTempo.textContent =
-                    `${tempoCapa.toFixed(1)} segundos`;
+                    formatarTempo(tempoCapa);
             }
         );
 
@@ -272,7 +289,9 @@ document.addEventListener("DOMContentLoaded", () => {
             "click",
             async () => {
 
-                if (!videoTemporarioCapa) {
+                if (
+                    !videoTemporarioCapa
+                ) {
 
                     alert(
                         "⚠️ Primeiro escolha um vídeo."
@@ -294,7 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       MOSTRAR SISTEMA DE CAPAS
+       MOSTRAR / ESCONDER CAPAS
        ===================================================== */
 
     function mostrarSistemaCapas() {
@@ -306,10 +325,6 @@ document.addEventListener("DOMContentLoaded", () => {
             "block";
     }
 
-
-    /* =====================================================
-       ESCONDER SISTEMA DE CAPAS
-       ===================================================== */
 
     function esconderSistemaCapas() {
 
@@ -325,10 +340,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-
-    /* =====================================================
-       STATUS
-       ===================================================== */
 
     function statusCapas(texto) {
 
@@ -351,6 +362,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function abrirModalPublicacao() {
 
+        limparFormulario();
+
         modalPublicacao.classList.add(
             "ativo"
         );
@@ -359,8 +372,15 @@ document.addEventListener("DOMContentLoaded", () => {
             "modal-aberto"
         );
 
-        limparFormulario();
+        setTimeout(() => {
+
+            if (nomeConteudo) {
+                nomeConteudo.focus();
+            }
+
+        }, 100);
     }
+
 
     if (botaoEnviar) {
 
@@ -369,6 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
             abrirModalPublicacao
         );
     }
+
 
     if (botaoEnviarMenu) {
 
@@ -380,7 +401,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       FECHAR PUBLICAÇÃO
+       FECHAR MODAL
        ===================================================== */
 
     function fecharModalPublicacao() {
@@ -394,6 +415,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
     }
 
+
     if (fecharModal) {
 
         fecharModal.addEventListener(
@@ -401,6 +423,7 @@ document.addEventListener("DOMContentLoaded", () => {
             fecharModalPublicacao
         );
     }
+
 
     if (cancelarPublicacao) {
 
@@ -418,8 +441,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function atualizarTipoConteudo() {
 
         if (
-            tipoConteudo.value ===
-            "serie"
+            tipoConteudo.value === "serie"
         ) {
 
             areaSerie.style.display =
@@ -449,6 +471,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+
     if (tipoConteudo) {
 
         tipoConteudo.addEventListener(
@@ -459,16 +482,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       GRATUITO / VENDA / ALUGUEL
+       ACESSO / PREÇO
        ===================================================== */
 
     function atualizarPreco() {
 
         if (
-            tipoAcesso.value ===
-                "venda" ||
-            tipoAcesso.value ===
-                "aluguel"
+            tipoAcesso.value === "venda" ||
+            tipoAcesso.value === "aluguel"
         ) {
 
             areaPreco.style.display =
@@ -483,6 +504,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "";
         }
     }
+
 
     if (tipoAcesso) {
 
@@ -528,17 +550,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 capaManual = true;
 
-                if (
-                    capaURL &&
-                    capaURL.startsWith(
-                        "blob:"
-                    )
-                ) {
-
-                    URL.revokeObjectURL(
-                        capaURL
-                    );
-                }
+                liberarCapaAnterior();
 
                 capaURL =
                     URL.createObjectURL(
@@ -549,11 +561,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     <div style="
                         position:relative;
+                        width:100%;
                     ">
 
                         <img
                             src="${capaURL}"
                             alt="Capa manual"
+                            style="
+                                width:100%;
+                                max-height:280px;
+                                object-fit:cover;
+                                border-radius:10px;
+                                display:block;
+                            "
                         >
 
                         <div style="
@@ -574,7 +594,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 `;
 
                 statusCapas(
-                    "📁 Capa manual selecionada. Ela será usada no lugar das capas automáticas."
+                    "📁 Capa manual escolhida. Ela será usada na publicação."
                 );
             }
         );
@@ -582,7 +602,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       VÍDEO DO FILME
+       SELEÇÃO DO VÍDEO DO FILME
        ===================================================== */
 
     if (arquivoVideo) {
@@ -599,8 +619,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     videoSelecionado =
                         null;
 
-                    videoURL =
-                        null;
+                    limparVideo();
 
                     return;
                 }
@@ -612,7 +631,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ) {
 
                     alert(
-                        "⚠️ Selecione um vídeo válido."
+                        "⚠️ Selecione um arquivo de vídeo válido."
                     );
 
                     arquivoVideo.value =
@@ -636,21 +655,39 @@ document.addEventListener("DOMContentLoaded", () => {
                         arquivo
                     );
 
-                await prepararVideoParaCapas(
-                    arquivo
-                );
+                /*
+                   Se o usuário não escolheu
+                   uma capa manual, geramos
+                   automaticamente.
+                */
+
+                if (!capaManual) {
+
+                    await prepararVideoParaCapas(
+                        arquivo
+                    );
+
+                } else {
+
+                    statusCapas(
+                        "📁 A capa manual continuará sendo usada."
+                    );
+                }
             }
         );
     }
 
 
     /* =====================================================
-       PREPARAR VÍDEO
+       PREPARAR VÍDEO PARA CAPAS
        ===================================================== */
 
     async function prepararVideoParaCapas(
         arquivo
     ) {
+
+        const idAtual =
+            ++geracaoId;
 
         destruirVideoTemporario();
 
@@ -708,8 +745,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 "loadedmetadata"
             );
 
+            if (
+                idAtual !== geracaoId
+            ) {
+                return;
+            }
+
             duracaoVideo =
-                video.duration;
+                Number(
+                    video.duration
+                );
 
             if (
                 !duracaoVideo ||
@@ -719,13 +764,9 @@ document.addEventListener("DOMContentLoaded", () => {
             ) {
 
                 throw new Error(
-                    "Duração inválida."
+                    "Duração do vídeo inválida."
                 );
             }
-
-            /*
-               Definir o máximo do slider.
-            */
 
             const sistema =
                 criarSistemaCapas();
@@ -735,31 +776,54 @@ document.addEventListener("DOMContentLoaded", () => {
                     "#sliderCapa"
                 );
 
+            tempoCapa =
+                Math.min(
+                    3,
+                    Math.max(
+                        0,
+                        duracaoVideo - 0.2
+                    )
+                );
+
             if (slider) {
 
                 slider.max =
-                    duracaoVideo;
-
-                tempoCapa =
-                    Math.min(
-                        3,
-                        Math.max(
-                            0,
-                            duracaoVideo - 0.1
-                        )
+                    Math.max(
+                        1,
+                        duracaoVideo
                     );
 
                 slider.value =
                     tempoCapa;
             }
 
+            const texto =
+                sistema.querySelector(
+                    "#tempoCapaTexto"
+                );
+
+            if (texto) {
+
+                texto.textContent =
+                    formatarTempo(
+                        tempoCapa
+                    );
+            }
+
             mostrarSistemaCapas();
 
-            capaManual =
-                false;
+            /*
+               Remove capa automática
+               anterior somente quando
+               realmente vamos gerar outra.
+            */
+
+            capaURL =
+                null;
 
             await gerarCincoCapas(
-                video
+                video,
+                idAtual
             );
 
         } catch (erro) {
@@ -769,8 +833,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 erro
             );
 
+            capaURL =
+                null;
+
             statusCapas(
-                "⚠️ Não foi possível gerar as capas automaticamente. Você pode escolher uma capa manual."
+                "⚠️ Não foi possível gerar a capa automaticamente. Escolha uma capa manual."
             );
         }
     }
@@ -781,11 +848,19 @@ document.addEventListener("DOMContentLoaded", () => {
        ===================================================== */
 
     async function gerarCincoCapas(
-        video
+        video,
+        idAtual
     ) {
 
         if (gerandoCapas) {
-            return;
+
+            /*
+               Permite que a próxima
+               seleção reinicie o processo.
+            */
+
+            gerandoCapas =
+                false;
         }
 
         gerandoCapas =
@@ -797,33 +872,26 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
         if (!opcoes) {
+
+            gerandoCapas =
+                false;
+
             return;
         }
 
-        opcoes.innerHTML = "";
+        opcoes.innerHTML =
+            "";
 
         statusCapas(
-            "⏳ Analisando o vídeo e criando 5 opções de capa..."
+            "⏳ Analisando o vídeo e criando 5 capas..."
         );
 
         try {
 
             const duracao =
-                video.duration;
-
-            /*
-               Momentos escolhidos:
-
-               5%
-               20%
-               40%
-               60%
-               80%
-
-               Evitamos os primeiros e últimos
-               frames porque normalmente são
-               menos interessantes.
-            */
+                Number(
+                    video.duration
+                );
 
             const porcentagens = [
                 0.05,
@@ -835,17 +903,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const momentos =
                 porcentagens.map(
-                    porcentagem => {
+                    percentual => {
 
                         return Math.min(
                             Math.max(
-                                0,
+                                0.1,
                                 duracao *
-                                porcentagem
+                                percentual
                             ),
                             Math.max(
-                                0,
-                                duracao - 0.1
+                                0.1,
+                                duracao - 0.2
                             )
                         );
                     }
@@ -857,6 +925,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 i++
             ) {
 
+                if (
+                    idAtual !== geracaoId
+                ) {
+
+                    return;
+                }
+
                 const tempo =
                     momentos[i];
 
@@ -866,6 +941,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         tempo
                     );
 
+                if (
+                    idAtual !== geracaoId
+                ) {
+
+                    return;
+                }
+
                 criarOpcaoCapa(
                     imagem,
                     tempo,
@@ -873,10 +955,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
 
-            /*
-               Selecionar automaticamente
-               a primeira capa.
-            */
+            if (
+                !opcoes.children.length
+            ) {
+
+                throw new Error(
+                    "Nenhuma capa foi criada."
+                );
+            }
 
             const primeira =
                 opcoes.querySelector(
@@ -891,18 +977,21 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             statusCapas(
-                "✅ Escolha uma das 5 capas geradas automaticamente."
+                "✅ 5 capas foram criadas. Clique na capa que deseja usar."
             );
 
         } catch (erro) {
 
             console.error(
-                "Erro ao gerar capas:",
+                "Erro ao gerar 5 capas:",
                 erro
             );
 
+            capaURL =
+                null;
+
             statusCapas(
-                "⚠️ Não foi possível gerar as 5 capas."
+                "⚠️ Não foi possível criar as capas automaticamente. Você pode escolher uma capa manual."
             );
 
         } finally {
@@ -925,6 +1014,15 @@ document.addEventListener("DOMContentLoaded", () => {
         await moverVideoParaTempo(
             video,
             tempo
+        );
+
+        /*
+           Pequena espera para garantir
+           que o frame esteja pronto.
+        */
+
+        await esperarPequenoTempo(
+            100
         );
 
         const largura =
@@ -951,6 +1049,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 "2d"
             );
 
+        if (!contexto) {
+
+            throw new Error(
+                "Canvas não disponível."
+            );
+        }
+
         contexto.drawImage(
             video,
             0,
@@ -958,10 +1063,6 @@ document.addEventListener("DOMContentLoaded", () => {
             largura,
             altura
         );
-
-        /*
-           JPEG reduz o tamanho da capa.
-        */
 
         return canvas.toDataURL(
             "image/jpeg",
@@ -1001,7 +1102,10 @@ document.addEventListener("DOMContentLoaded", () => {
             "opcao-capa";
 
         botao.dataset.tempo =
-            tempo;
+            String(tempo);
+
+        botao.dataset.imagem =
+            imagem;
 
         botao.style.position =
             "relative";
@@ -1060,15 +1164,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
 
-        /*
-           Guardamos a imagem no próprio
-           elemento para poder utilizá-la
-           depois.
-        */
-
-        botao.dataset.imagem =
-            imagem;
-
         opcoes.appendChild(
             botao
         );
@@ -1082,6 +1177,14 @@ document.addEventListener("DOMContentLoaded", () => {
     function selecionarCapa(
         elemento
     ) {
+
+        const imagem =
+            elemento.dataset.imagem;
+
+        if (!imagem) {
+
+            return;
+        }
 
         const opcoes =
             document.querySelectorAll(
@@ -1099,18 +1202,6 @@ document.addEventListener("DOMContentLoaded", () => {
         elemento.style.border =
             "3px solid #111";
 
-        const imagem =
-            elemento.dataset.imagem;
-
-        const tempo =
-            Number(
-                elemento.dataset.tempo
-            );
-
-        if (!imagem) {
-            return;
-        }
-
         capaURL =
             imagem;
 
@@ -1121,11 +1212,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
             <div style="
                 position:relative;
+                width:100%;
             ">
 
                 <img
                     src="${imagem}"
                     alt="Capa automática escolhida"
+                    style="
+                        width:100%;
+                        max-height:280px;
+                        object-fit:cover;
+                        border-radius:10px;
+                        display:block;
+                    "
                 >
 
                 <div style="
@@ -1146,7 +1245,9 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         tempoCapa =
-            tempo;
+            Number(
+                elemento.dataset.tempo
+            );
 
         const slider =
             document.getElementById(
@@ -1156,7 +1257,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (slider) {
 
             slider.value =
-                tempo;
+                tempoCapa;
         }
 
         const texto =
@@ -1167,42 +1268,71 @@ document.addEventListener("DOMContentLoaded", () => {
         if (texto) {
 
             texto.textContent =
-                `${formatarTempo(tempo)}`;
+                formatarTempo(
+                    tempoCapa
+                );
         }
 
         statusCapas(
-            `✅ Capa ${elemento.textContent.trim().split("\n")[0]} selecionada.`
+            "✅ Capa automática selecionada."
         );
     }
 
 
     /* =====================================================
-       GERAR UMA CAPA EM OUTRO MOMENTO
+       GERAR OUTRA CAPA
        ===================================================== */
 
     async function gerarUmaCapa(
         video,
         tempo,
-        mostrarComoNova
+        adicionarLista
     ) {
 
-        if (gerandoCapas) {
+        if (
+            gerandoCapas
+        ) {
+
+            return;
+        }
+
+        if (
+            !video ||
+            !video.videoWidth
+        ) {
+
+            alert(
+                "⚠️ O vídeo ainda não está pronto."
+            );
+
             return;
         }
 
         gerandoCapas =
             true;
 
-        statusCapas(
-            "⏳ Criando capa no momento escolhido..."
-        );
-
         try {
+
+            const tempoSeguro =
+                Math.min(
+                    Math.max(
+                        0,
+                        Number(tempo) || 0
+                    ),
+                    Math.max(
+                        0,
+                        duracaoVideo - 0.2
+                    )
+                );
+
+            statusCapas(
+                "⏳ Criando nova capa..."
+            );
 
             const imagem =
                 await capturarFrame(
                     video,
-                    tempo
+                    tempoSeguro
                 );
 
             capaURL =
@@ -1215,11 +1345,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 <div style="
                     position:relative;
+                    width:100%;
                 ">
 
                     <img
                         src="${imagem}"
                         alt="Nova capa automática"
+                        style="
+                            width:100%;
+                            max-height:280px;
+                            object-fit:cover;
+                            border-radius:10px;
+                            display:block;
+                        "
                     >
 
                     <div style="
@@ -1240,37 +1378,53 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
 
             tempoCapa =
-                tempo;
+                tempoSeguro;
 
-            statusCapas(
-                `✅ Nova capa criada aos ${formatarTempo(tempo)}.`
-            );
+            const slider =
+                document.getElementById(
+                    "sliderCapa"
+                );
 
-            /*
-               Se solicitado, adicionamos
-               essa nova opção às 5 existentes.
-            */
+            if (slider) {
 
-            if (mostrarComoNova) {
+                slider.value =
+                    tempoSeguro;
+            }
 
-                const opcoes =
-                    document.getElementById(
-                        "opcoesCapas"
+            const texto =
+                document.getElementById(
+                    "tempoCapaTexto"
+                );
+
+            if (texto) {
+
+                texto.textContent =
+                    formatarTempo(
+                        tempoSeguro
                     );
+            }
 
-                const numero =
-                    opcoes
-                        ? opcoes.children.length + 1
-                        : 6;
+            if (
+                adicionarLista
+            ) {
 
                 criarOpcaoCapa(
                     imagem,
-                    tempo,
-                    numero
+                    tempoSeguro,
+                    document.querySelectorAll(
+                        ".opcao-capa"
+                    ).length + 1
                 );
 
+                const opcoes =
+                    document.querySelectorAll(
+                        ".opcao-capa"
+                    );
+
                 const ultima =
-                    opcoes.lastElementChild;
+                    opcoes[
+                        opcoes.length - 1
+                    ];
 
                 if (ultima) {
 
@@ -1280,14 +1434,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
 
+            statusCapas(
+                `✅ Nova capa criada em ${formatarTempo(tempoSeguro)}.`
+            );
+
         } catch (erro) {
 
             console.error(
+                "Erro ao criar capa:",
                 erro
             );
 
-            statusCapas(
-                "⚠️ Não foi possível criar a capa."
+            alert(
+                "⚠️ Não foi possível criar a nova capa."
             );
 
         } finally {
@@ -1299,7 +1458,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       MOVER VÍDEO
+       MOVER VÍDEO PARA UM MOMENTO
        ===================================================== */
 
     function moverVideoParaTempo(
@@ -1309,6 +1468,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         return new Promise(
             (resolve, reject) => {
+
+                const novoTempo =
+                    Number(tempo);
+
+                if (
+                    !Number.isFinite(
+                        novoTempo
+                    )
+                ) {
+
+                    reject(
+                        new Error(
+                            "Tempo inválido."
+                        )
+                    );
+
+                    return;
+                }
 
                 const limite =
                     setTimeout(
@@ -1321,12 +1498,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
                             reject(
                                 new Error(
-                                    "Tempo limite."
+                                    "Tempo limite ao procurar o frame."
                                 )
                             );
 
                         },
-                        10000
+                        15000
                     );
 
                 function terminou() {
@@ -1351,7 +1528,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 try {
 
                     video.currentTime =
-                        tempo;
+                        novoTempo;
 
                 } catch (erro) {
 
@@ -1398,7 +1575,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     reject(
                         new Error(
-                            `Erro no evento ${evento}`
+                            `Erro no carregamento do vídeo.`
                         )
                     );
                 }
@@ -1437,6 +1614,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
+       PEQUENA ESPERA
+       ===================================================== */
+
+    function esperarPequenoTempo(
+        tempo
+    ) {
+
+        return new Promise(
+            resolve =>
+                setTimeout(
+                    resolve,
+                    tempo
+                )
+        );
+    }
+
+
+    /* =====================================================
        FORMATAR TEMPO
        ===================================================== */
 
@@ -1450,9 +1645,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 Number(segundos) || 0
             );
 
+        const horas =
+            Math.floor(
+                segundos / 3600
+            );
+
         const minutos =
             Math.floor(
-                segundos / 60
+                (segundos % 3600) / 60
             );
 
         const seg =
@@ -1460,9 +1660,54 @@ document.addEventListener("DOMContentLoaded", () => {
                 segundos % 60
             );
 
+        if (horas > 0) {
+
+            return `${horas}:${String(
+                minutos
+            ).padStart(2, "0")}:${String(
+                seg
+            ).padStart(2, "0")`;
+        }
+
         return `${minutos}:${String(
             seg
         ).padStart(2, "0")}`;
+    }
+
+
+    /* =====================================================
+       LIBERAR CAPA ANTERIOR
+       ===================================================== */
+
+    function liberarCapaAnterior() {
+
+        /*
+           Imagens geradas pelo canvas
+           são data URLs e não precisam
+           de revokeObjectURL.
+
+           Apenas capas blob são liberadas.
+        */
+
+        if (
+            capaURL &&
+            capaURL.startsWith("blob:")
+        ) {
+
+            try {
+
+                URL.revokeObjectURL(
+                    capaURL
+                );
+
+            } catch (erro) {
+
+                console.warn(
+                    "Não foi possível liberar capa:",
+                    erro
+                );
+            }
+        }
     }
 
 
@@ -1475,6 +1720,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (
             !videoTemporarioCapa
         ) {
+
             return;
         }
 
@@ -1485,8 +1731,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
             videoTemporarioCapa.pause();
 
-            videoTemporarioCapa.src =
-                "";
+            videoTemporarioCapa.removeAttribute(
+                "src"
+            );
 
             videoTemporarioCapa.load();
 
@@ -1494,9 +1741,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (
                 url &&
-                url.startsWith(
-                    "blob:"
-                )
+                url.startsWith("blob:")
             ) {
 
                 URL.revokeObjectURL(
@@ -1514,6 +1759,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
         videoTemporarioCapa =
             null;
+    }
+
+
+    /* =====================================================
+       LIMPAR VÍDEO
+       ===================================================== */
+
+    function limparVideo() {
+
+        geracaoId++;
+
+        destruirVideoTemporario();
+
+        if (videoURL) {
+
+            try {
+
+                URL.revokeObjectURL(
+                    videoURL
+                );
+
+            } catch (erro) {}
+        }
+
+        videoURL =
+            null;
+
+        videoSelecionado =
+            null;
+
+        duracaoVideo =
+            0;
+
+        capaURL =
+            null;
+
+        gerandoCapas =
+            false;
+
+        esconderSistemaCapas();
+
+        if (previewCapa) {
+
+            previewCapa.innerHTML =
+                "Pré-visualização da capa";
+        }
     }
 
 
@@ -1555,9 +1846,26 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        /*
+           Limite de segurança
+           para não travar o navegador.
+        */
+
+        const temporadasSeguras =
+            Math.min(
+                totalTemporadas,
+                50
+            );
+
+        const episodiosSeguros =
+            Math.min(
+                totalEpisodios,
+                100
+            );
+
         for (
             let t = 1;
-            t <= totalTemporadas;
+            t <= temporadasSeguras;
             t++
         ) {
 
@@ -1592,7 +1900,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             for (
                 let e = 1;
-                e <= totalEpisodios;
+                e <= episodiosSeguros;
                 e++
             ) {
 
@@ -1653,7 +1961,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 temporada
             );
         }
+
+        if (
+            totalTemporadas > 50 ||
+            totalEpisodios > 100
+        ) {
+
+            alert(
+                "⚠️ Para manter o navegador rápido, foram aplicados limites de segurança."
+            );
+        }
     }
+
 
     if (quantidadeTemporadas) {
 
@@ -1662,6 +1981,7 @@ document.addEventListener("DOMContentLoaded", () => {
             gerarTemporadas
         );
     }
+
 
     if (quantidadeEpisodios) {
 
@@ -1673,7 +1993,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       EPISÓDIOS DAS SÉRIES
+       EPISÓDIOS DA SÉRIE
        ===================================================== */
 
     listaTemporadas.addEventListener(
@@ -1714,14 +2034,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const temporadaNumero =
                 Number(
-                    event.target.dataset
-                        .temporada
+                    event.target.dataset.temporada
                 );
 
             const episodioNumero =
                 Number(
-                    event.target.dataset
-                        .episodio
+                    event.target.dataset.episodio
                 );
 
             const temporada =
@@ -1746,9 +2064,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         episodio.url
                     ) {
 
-                        URL.revokeObjectURL(
-                            episodio.url
-                        );
+                        try {
+
+                            URL.revokeObjectURL(
+                                episodio.url
+                            );
+
+                        } catch (erro) {}
                     }
 
                     episodio.arquivo =
@@ -1762,11 +2084,17 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             /*
-               O primeiro episódio selecionado
-               gera as capas da série.
+               O primeiro episódio escolhido
+               gera as capas automáticas.
             */
 
-            if (!capaManual) {
+            if (
+                !capaManual &&
+                !videoSelecionado
+            ) {
+
+                videoSelecionado =
+                    arquivo;
 
                 await prepararVideoParaCapas(
                     arquivo
@@ -1789,235 +2117,382 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    function publicarConteudo() {
+    async function publicarConteudo() {
 
-        const tipo =
-            tipoConteudo.value;
-
-        const nome =
-            nomeConteudo.value.trim();
-
-        const descricao =
-            descricaoConteudo.value.trim();
-
-        const ano =
-            anoConteudo.value.trim();
-
-        const acesso =
-            tipoAcesso.value;
-
-
-        /* -------------------------------------------------
-           NOME
-           ------------------------------------------------- */
-
-        if (!nome) {
-
-            alert(
-                "⚠️ Digite o nome do conteúdo."
-            );
-
-            nomeConteudo.focus();
+        if (publicando) {
 
             return;
         }
 
+        publicando =
+            true;
 
-        /* -------------------------------------------------
-           ANO
-           ------------------------------------------------- */
+        salvarPublicacao.disabled =
+            true;
 
-        if (!ano) {
+        const textoOriginal =
+            salvarPublicacao.innerHTML;
 
-            alert(
-                "⚠️ Digite o ano do conteúdo."
-            );
+        salvarPublicacao.innerHTML =
+            "⏳ Publicando...";
 
-            anoConteudo.focus();
+        try {
 
-            return;
-        }
+            const tipo =
+                tipoConteudo.value;
 
+            const nome =
+                nomeConteudo.value.trim();
 
-        /* -------------------------------------------------
-           CAPA
-           ------------------------------------------------- */
+            const descricao =
+                descricaoConteudo.value.trim();
 
-        if (!capaURL) {
+            const ano =
+                anoConteudo.value.trim();
 
-            alert(
-                "⚠️ Escolha uma capa ou selecione um vídeo para gerar automaticamente."
-            );
-
-            return;
-        }
-
-
-        /* -------------------------------------------------
-           REGRAS
-           ------------------------------------------------- */
-
-        if (
-            !aceitarRegras.checked
-        ) {
-
-            alert(
-                "⚠️ Confirme que possui os direitos de publicação."
-            );
-
-            aceitarRegras.focus();
-
-            return;
-        }
+            const acesso =
+                tipoAcesso.value;
 
 
-        /* -------------------------------------------------
-           PREÇO
-           ------------------------------------------------- */
+            /* =============================================
+               NOME
+               ============================================= */
 
-        let preco = "";
-
-        if (
-            acesso === "venda" ||
-            acesso === "aluguel"
-        ) {
-
-            preco =
-                precoConteudo.value;
-
-            if (
-                !preco ||
-                Number(preco) <= 0
-            ) {
+            if (!nome) {
 
                 alert(
-                    "⚠️ Digite um preço válido."
+                    "⚠️ Digite o nome do filme."
                 );
 
-                precoConteudo.focus();
-
-                return;
-            }
-        }
-
-
-        /* =================================================
-           FILME
-           ================================================= */
-
-        if (
-            tipo === "filme"
-        ) {
-
-            if (
-                !videoSelecionado
-            ) {
-
-                alert(
-                    "⚠️ Escolha o vídeo do filme."
-                );
-
-                arquivoVideo.focus();
+                nomeConteudo.focus();
 
                 return;
             }
 
-            criarCardFilme({
 
-                nome,
+            /* =============================================
+               ANO
+               ============================================= */
 
-                descricao,
+            if (!ano) {
 
-                ano,
-
-                capa:
-                    capaURL,
-
-                video:
-                    videoURL,
-
-                acesso,
-
-                preco
-            });
-        }
-
-
-        /* =================================================
-           SÉRIE
-           ================================================= */
-
-        if (
-            tipo === "serie"
-        ) {
-
-            const arquivos =
-                document.querySelectorAll(
-                    ".arquivo-episodio"
+                alert(
+                    "⚠️ Digite o ano do conteúdo."
                 );
 
-            let quantidade =
-                0;
+                anoConteudo.focus();
 
-            arquivos.forEach(
-                input => {
+                return;
+            }
+
+
+            const anoNumero =
+                Number(ano);
+
+            if (
+                !Number.isInteger(
+                    anoNumero
+                ) ||
+                anoNumero < 1900 ||
+                anoNumero > 2100
+            ) {
+
+                alert(
+                    "⚠️ Digite um ano válido entre 1900 e 2100."
+                );
+
+                anoConteudo.focus();
+
+                return;
+            }
+
+
+            /* =============================================
+               REGRAS
+               ============================================= */
+
+            if (
+                !aceitarRegras.checked
+            ) {
+
+                alert(
+                    "⚠️ Marque a confirmação de direitos de publicação."
+                );
+
+                aceitarRegras.focus();
+
+                return;
+            }
+
+
+            /* =============================================
+               PREÇO
+               ============================================= */
+
+            let preco =
+                "";
+
+            if (
+                acesso === "venda" ||
+                acesso === "aluguel"
+            ) {
+
+                preco =
+                    precoConteudo.value.trim();
+
+                if (
+                    !preco ||
+                    Number(preco) <= 0
+                ) {
+
+                    alert(
+                        "⚠️ Digite um preço válido."
+                    );
+
+                    precoConteudo.focus();
+
+                    return;
+                }
+            }
+
+
+            /* =============================================
+               FILME
+               ============================================= */
+
+            if (
+                tipo === "filme"
+            ) {
+
+                if (
+                    !videoSelecionado ||
+                    !videoURL
+                ) {
+
+                    alert(
+                        "⚠️ Escolha primeiro o vídeo do filme."
+                    );
+
+                    arquivoVideo.focus();
+
+                    return;
+                }
+
+
+                /*
+                   A capa pode ser automática
+                   ou manual.
+                */
+
+                if (!capaURL) {
+
+                    alert(
+                        "⚠️ A capa ainda não foi criada. Aguarde a geração automática ou escolha uma capa manual."
+                    );
+
+                    return;
+                }
+
+
+                criarCardFilme({
+
+                    nome,
+
+                    descricao,
+
+                    ano,
+
+                    capa:
+                        capaURL,
+
+                    video:
+                        videoURL,
+
+                    acesso,
+
+                    preco
+                });
+
+
+                mostrarMensagemSucesso(
+                    "🎉 Filme publicado com sucesso!"
+                );
+            }
+
+
+            /* =============================================
+               SÉRIE
+               ============================================= */
+
+            if (
+                tipo === "serie"
+            ) {
+
+                const temporadas =
+                    montarDadosSerie();
+
+                let quantidadeVideos =
+                    0;
+
+                temporadas.forEach(
+                    temporada => {
+
+                        temporada.episodios.forEach(
+                            episodio => {
+
+                                if (
+                                    episodio.arquivo
+                                ) {
+
+                                    quantidadeVideos++;
+                                }
+                            }
+                        );
+                    }
+                );
+
+
+                if (
+                    quantidadeVideos === 0
+                ) {
+
+                    alert(
+                        "⚠️ Escolha pelo menos um episódio."
+                    );
+
+                    return;
+                }
+
+
+                if (!capaURL) {
+
+                    /*
+                       Se ainda não houver capa,
+                       tenta usar o primeiro episódio
+                       disponível.
+                    */
+
+                    const primeiro =
+                        encontrarPrimeiroEpisodio(
+                            temporadas
+                        );
 
                     if (
-                        input.files &&
-                        input.files.length
+                        primeiro &&
+                        primeiro.arquivo
                     ) {
 
-                        quantidade++;
+                        try {
+
+                            await prepararVideoParaCapas(
+                                primeiro.arquivo
+                            );
+
+                        } catch (erro) {
+
+                            console.error(
+                                erro
+                            );
+                        }
                     }
                 }
-            );
 
-            if (
-                quantidade === 0
-            ) {
 
-                alert(
-                    "⚠️ Escolha pelo menos um episódio."
+                if (!capaURL) {
+
+                    alert(
+                        "⚠️ Escolha uma capa para a série."
+                    );
+
+                    return;
+                }
+
+
+                criarCardSerie({
+
+                    nome,
+
+                    descricao,
+
+                    ano,
+
+                    capa:
+                        capaURL,
+
+                    acesso,
+
+                    preco,
+
+                    temporadas
+                });
+
+
+                mostrarMensagemSucesso(
+                    "🎉 Série publicada com sucesso!"
                 );
-
-                return;
             }
 
-            const temporadas =
-                montarDadosSerie();
 
-            criarCardSerie({
+            fecharModalPublicacao();
 
-                nome,
+            limparFormulario();
 
-                descricao,
+        } catch (erro) {
 
-                ano,
+            console.error(
+                "Erro ao publicar:",
+                erro
+            );
 
-                capa:
-                    capaURL,
+            alert(
+                "❌ Ocorreu um erro ao publicar o conteúdo. Veja o console do navegador para mais detalhes."
+            );
 
-                acesso,
+        } finally {
 
-                preco,
+            publicando =
+                false;
 
-                temporadas
-            });
+            salvarPublicacao.disabled =
+                false;
+
+            salvarPublicacao.innerHTML =
+                textoOriginal;
         }
-
-
-        alert(
-            "🎉 Conteúdo publicado com sucesso no I.M.A Filmes!"
-        );
-
-        fecharModalPublicacao();
-
-        limparFormulario();
     }
 
 
     /* =====================================================
-       MONTAR SÉRIE
+       ENCONTRAR PRIMEIRO EPISÓDIO
+       ===================================================== */
+
+    function encontrarPrimeiroEpisodio(
+        temporadas
+    ) {
+
+        for (
+            const temporada of temporadas
+        ) {
+
+            for (
+                const episodio of temporada.episodios
+            ) {
+
+                if (
+                    episodio.arquivo
+                ) {
+
+                    return episodio;
+                }
+            }
+        }
+
+        return null;
+    }
+
+
+    /* =====================================================
+       MONTAR DADOS DA SÉRIE
        ===================================================== */
 
     function montarDadosSerie() {
@@ -2066,7 +2541,10 @@ document.addEventListener("DOMContentLoaded", () => {
                             );
 
                         const arquivo =
-                            arquivoInput.files[0];
+                            arquivoInput &&
+                            arquivoInput.files
+                                ? arquivoInput.files[0]
+                                : null;
 
                         let url =
                             null;
@@ -2087,8 +2565,10 @@ document.addEventListener("DOMContentLoaded", () => {
                                 indiceEpisodio + 1,
 
                             titulo:
-                                tituloInput.value.trim() ||
-                                `Episódio ${indiceEpisodio + 1}`,
+                                tituloInput &&
+                                tituloInput.value.trim()
+                                    ? tituloInput.value.trim()
+                                    : `Episódio ${indiceEpisodio + 1}`,
 
                             arquivo,
 
@@ -2108,7 +2588,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       CARD FILME
+       CARD DO FILME
        ===================================================== */
 
     function criarCardFilme(
@@ -2195,11 +2675,14 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
 
-        artigo
-            .querySelector(
+        const botaoAssistir =
+            artigo.querySelector(
                 ".assistir"
-            )
-            .addEventListener(
+            );
+
+        if (botaoAssistir) {
+
+            botaoAssistir.addEventListener(
                 "click",
                 () => {
 
@@ -2213,13 +2696,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                 }
             );
+        }
 
 
-        artigo
-            .querySelector(
+        const botaoBaixar =
+            artigo.querySelector(
                 ".baixar"
-            )
-            .addEventListener(
+            );
+
+        if (botaoBaixar) {
+
+            botaoBaixar.addEventListener(
                 "click",
                 () => {
 
@@ -2231,13 +2718,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                 }
             );
+        }
 
 
-        artigo
-            .querySelector(
+        const botaoPartilhar =
+            artigo.querySelector(
                 ".partilhar"
-            )
-            .addEventListener(
+            );
+
+        if (botaoPartilhar) {
+
+            botaoPartilhar.addEventListener(
                 "click",
                 () => {
 
@@ -2246,11 +2737,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                 }
             );
+        }
     }
 
 
     /* =====================================================
-       CARD SÉRIE
+       CARD DA SÉRIE
        ===================================================== */
 
     function criarCardSerie(
@@ -2336,11 +2828,14 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
 
-        artigo
-            .querySelector(
+        const botaoAssistir =
+            artigo.querySelector(
                 ".assistir"
-            )
-            .addEventListener(
+            );
+
+        if (botaoAssistir) {
+
+            botaoAssistir.addEventListener(
                 "click",
                 () => {
 
@@ -2349,13 +2844,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                 }
             );
+        }
 
 
-        artigo
-            .querySelector(
+        const botaoPartilhar =
+            artigo.querySelector(
                 ".partilhar"
-            )
-            .addEventListener(
+            );
+
+        if (botaoPartilhar) {
+
+            botaoPartilhar.addEventListener(
                 "click",
                 () => {
 
@@ -2364,6 +2863,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                 }
             );
+        }
     }
 
 
@@ -2387,14 +2887,18 @@ document.addEventListener("DOMContentLoaded", () => {
             acesso === "venda"
         ) {
 
-            return `💰 Venda: ${preco} Kz`;
+            return `💰 Venda: ${escaparHTML(
+                preco
+            )} Kz`;
         }
 
         if (
             acesso === "aluguel"
         ) {
 
-            return `🎟️ Aluguel: ${preco} Kz`;
+            return `🎟️ Aluguel: ${escaparHTML(
+                preco
+            )} Kz`;
         }
 
         return "";
@@ -2469,6 +2973,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
     }
 
+
     if (fecharPlayer) {
 
         fecharPlayer.addEventListener(
@@ -2479,7 +2984,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       EPISÓDIOS
+       LISTA DE EPISÓDIOS
        ===================================================== */
 
     function abrirListaEpisodios(
@@ -2498,8 +3003,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 temporada.episodios.forEach(
                     episodio => {
 
+                        const estado =
+                            episodio.url
+                                ? "▶️"
+                                : "⚠️";
+
                         mensagem +=
-                            `▶️ ${episodio.numero}. ${episodio.titulo}\n`;
+                            `${estado} ${episodio.numero}. ${episodio.titulo}\n`;
                     }
                 );
 
@@ -2523,8 +3033,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 escolha
             );
 
+        if (
+            !Number.isInteger(
+                numero
+            )
+        ) {
+
+            alert(
+                "⚠️ Digite um número válido."
+            );
+
+            return;
+        }
+
         let encontrado =
             null;
+
+        /*
+           Procura primeiro um episódio
+           com o número informado e vídeo.
+        */
 
         for (
             const temporada of
@@ -2538,7 +3066,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (
                     episodio.numero ===
-                        numero &&
+                    numero &&
                     episodio.url
                 ) {
 
@@ -2605,7 +3133,9 @@ document.addEventListener("DOMContentLoaded", () => {
             url;
 
         link.download =
-            `${nome}.mp4`;
+            `${limparNomeArquivo(
+                nome
+            )}.mp4`;
 
         document.body.appendChild(
             link
@@ -2645,13 +3175,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
             } else {
 
-                await navigator.clipboard.writeText(
-                    texto
-                );
+                if (
+                    navigator.clipboard
+                ) {
 
-                alert(
-                    "🔗 Texto copiado para partilhar!"
-                );
+                    await navigator.clipboard.writeText(
+                        texto
+                    );
+
+                    alert(
+                        "🔗 Texto copiado para partilhar!"
+                    );
+
+                } else {
+
+                    alert(
+                        texto
+                    );
+                }
             }
 
         } catch (erro) {
@@ -2709,6 +3250,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function limparFormulario() {
 
+        geracaoId++;
+
+        /*
+           Liberar vídeo temporário.
+        */
+
+        destruirVideoTemporario();
+
+
+        /*
+           Liberar URL do vídeo.
+        */
+
+        if (videoURL) {
+
+            try {
+
+                URL.revokeObjectURL(
+                    videoURL
+                );
+
+            } catch (erro) {}
+        }
+
+
+        /*
+           Resetar campos.
+        */
+
         nomeConteudo.value =
             "";
 
@@ -2742,20 +3312,26 @@ document.addEventListener("DOMContentLoaded", () => {
         aceitarRegras.checked =
             false;
 
+
+        /*
+           Resetar preview.
+        */
+
         previewCapa.innerHTML =
             "Pré-visualização da capa";
+
+
+        /*
+           Limpar temporadas.
+        */
 
         listaTemporadas.innerHTML =
             "";
 
-        areaSerie.style.display =
-            "none";
 
-        areaPreco.style.display =
-            "none";
-
-        areaVideo.style.display =
-            "block";
+        /*
+           Estado.
+        */
 
         capaURL =
             null;
@@ -2766,26 +3342,8 @@ document.addEventListener("DOMContentLoaded", () => {
         videoSelecionado =
             null;
 
-        if (videoURL) {
-
-            try {
-
-                URL.revokeObjectURL(
-                    videoURL
-                );
-
-            } catch (erro) {}
-        }
-
         videoURL =
             null;
-
-        destruirVideoTemporario();
-
-        esconderSistemaCapas();
-
-        temporadaDados =
-            [];
 
         duracaoVideo =
             0;
@@ -2795,6 +3353,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
         gerandoCapas =
             false;
+
+        temporadaDados =
+            [];
+
+
+        /*
+           Esconder capas.
+        */
+
+        esconderSistemaCapas();
+
+
+        /*
+           Limpar opções antigas.
+        */
 
         const opcoes =
             document.getElementById(
@@ -2806,6 +3379,11 @@ document.addEventListener("DOMContentLoaded", () => {
             opcoes.innerHTML =
                 "";
         }
+
+
+        atualizarTipoConteudo();
+
+        atualizarPreco();
     }
 
 
@@ -2823,9 +3401,55 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
         div.textContent =
-            texto;
+            String(
+                texto ?? ""
+            );
 
         return div.innerHTML;
+    }
+
+
+    /* =====================================================
+       LIMPAR NOME DE ARQUIVO
+       ===================================================== */
+
+    function limparNomeArquivo(
+        nome
+    ) {
+
+        return String(
+            nome || "filme"
+        )
+            .replace(
+                /[<>:"/\\|?*]+/g,
+                ""
+            )
+            .trim()
+            .substring(
+                0,
+                100
+            ) ||
+            "filme";
+    }
+
+
+    /* =====================================================
+       MENSAGEM DE SUCESSO
+       ===================================================== */
+
+    function mostrarMensagemSucesso(
+        mensagem
+    ) {
+
+        /*
+           Por enquanto usamos alert.
+           Mais tarde podemos substituir
+           por uma notificação moderna.
+        */
+
+        alert(
+            mensagem
+        );
     }
 
 
@@ -2870,7 +3494,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       ESC
+       TECLA ESC
        ===================================================== */
 
     document.addEventListener(
@@ -2878,27 +3502,31 @@ document.addEventListener("DOMContentLoaded", () => {
         event => {
 
             if (
-                event.key ===
+                event.key !==
                 "Escape"
             ) {
 
-                if (
-                    modalPublicacao.classList.contains(
-                        "ativo"
-                    )
-                ) {
+                return;
+            }
 
-                    fecharModalPublicacao();
-                }
+            if (
+                modalPublicacao &&
+                modalPublicacao.classList.contains(
+                    "ativo"
+                )
+            ) {
 
-                if (
-                    modalPlayer.classList.contains(
-                        "ativo"
-                    )
-                ) {
+                fecharModalPublicacao();
+            }
 
-                    fecharVideo();
-                }
+            if (
+                modalPlayer &&
+                modalPlayer.classList.contains(
+                    "ativo"
+                )
+            ) {
+
+                fecharVideo();
             }
         }
     );
@@ -2915,7 +3543,7 @@ document.addEventListener("DOMContentLoaded", () => {
     atualizarPreco();
 
     console.log(
-        "🎬 I.M.A Filmes iniciado!"
+        "🎬 I.M.A Filmes iniciado corretamente!"
     );
 
     console.log(
