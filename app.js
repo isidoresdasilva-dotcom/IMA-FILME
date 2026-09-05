@@ -1,11 +1,11 @@
-javascript
 document.addEventListener("DOMContentLoaded", function () {
-
     "use strict";
 
-     =========================================================
-     ELEMENTOS DO HTML
-     =========================================================
+    console.log("I.M.A FILMES iniciado");
+
+    /* =========================================================
+       ELEMENTOS DO HTML
+    ========================================================= */
 
     const botaoEnviar = document.getElementById("botaoEnviar");
     const botaoEnviarMenu = document.getElementById("botaoEnviarMenu");
@@ -16,23 +16,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const salvarPublicacao = document.getElementById("salvarPublicacao");
 
     const tipoConteudo = document.getElementById("tipoConteudo");
-    const tipoAcesso = document.getElementById("tipoAcesso");
-
     const areaSerie = document.getElementById("areaSerie");
     const areaVideo = document.getElementById("areaVideo");
-    const areaPreco = document.getElementById("areaPreco");
 
     const arquivoCapa = document.getElementById("arquivoCapa");
-    const arquivoVideo = document.getElementById("arquivoVideo");
-
     const previewCapa = document.getElementById("previewCapa");
 
     const nomeConteudo = document.getElementById("nomeConteudo");
     const descricaoConteudo = document.getElementById("descricaoConteudo");
     const anoConteudo = document.getElementById("anoConteudo");
-
-    const precoConteudo = document.getElementById("precoConteudo");
-    const aceitarRegras = document.getElementById("aceitarRegras");
 
     const quantidadeTemporadas =
         document.getElementById("quantidadeTemporadas");
@@ -42,6 +34,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const listaTemporadas =
         document.getElementById("listaTemporadas");
+
+    const arquivoVideo =
+        document.getElementById("arquivoVideo");
+
+    const tipoAcesso =
+        document.getElementById("tipoAcesso");
+
+    const areaPreco =
+        document.getElementById("areaPreco");
+
+    const precoConteudo =
+        document.getElementById("precoConteudo");
+
+    const aceitarRegras =
+        document.getElementById("aceitarRegras");
 
     const listaFilmes =
         document.getElementById("listaFilmes");
@@ -65,128 +72,114 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("descricaoPlayer");
 
 
-     =========================================================
-     VARIÁVEIS
-     =========================================================
+    /* =========================================================
+       VARIÁVEIS
+    ========================================================= */
 
-    let capaManual = false;
     let capaSelecionada = "";
-    let videoSelecionado = null;
 
-    let capasAutomaticas = [];
+    let videoPrincipalURL = "";
 
-    let conteudos = [];
+    let numeroPublicacao = 0;
 
 
-     =========================================================
-     ABRIR PUBLICAÇÃO
-     =========================================================
+    /* =========================================================
+       FUNÇÕES AUXILIARES
+    ========================================================= */
 
-    function abrirPublicacao() {
+    function abrirModal() {
+        if (modalPublicacao) {
+            modalPublicacao.classList.add("ativo");
+            modalPublicacao.style.display = "flex";
+        }
+    }
 
-        if (!modalPublicacao) return;
+    function fecharModalPublicacao() {
+        if (modalPublicacao) {
+            modalPublicacao.classList.remove("ativo");
+            modalPublicacao.style.display = "none";
+        }
+    }
 
-        modalPublicacao.classList.add("ativo");
+    function fecharModalDoPlayer() {
+        if (videoPlayer) {
+            videoPlayer.pause();
+            videoPlayer.removeAttribute("src");
+            videoPlayer.load();
+        }
 
-        modalPublicacao.style.display = "flex";
+        if (modalPlayer) {
+            modalPlayer.classList.remove("ativo");
+            modalPlayer.style.display = "none";
+        }
+    }
 
+    function escaparHTML(texto) {
+        if (texto === null || texto === undefined) {
+            return "";
+        }
+
+        return String(texto)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function mostrarMensagem(mensagem) {
+        alert(mensagem);
     }
 
 
-     =========================================================
-     FECHAR PUBLICAÇÃO
-     =========================================================
-
-    function fecharPublicacao() {
-
-        if (!modalPublicacao) return;
-
-        modalPublicacao.classList.remove("ativo");
-
-        modalPublicacao.style.display = "none";
-
-    }
-
-
-     =========================================================
-     BOTÕES DE PUBLICAÇÃO
-     =========================================================
+    /* =========================================================
+       ABRIR PUBLICAÇÃO
+    ========================================================= */
 
     if (botaoEnviar) {
-
-        botaoEnviar.addEventListener(
-            "click",
-            abrirPublicacao
-        );
-
+        botaoEnviar.addEventListener("click", function () {
+            abrirModal();
+        });
     }
-
 
     if (botaoEnviarMenu) {
-
-        botaoEnviarMenu.addEventListener(
-            "click",
-            abrirPublicacao
-        );
-
+        botaoEnviarMenu.addEventListener("click", function () {
+            abrirModal();
+        });
     }
 
+
+    /* =========================================================
+       FECHAR MODAL
+    ========================================================= */
 
     if (fecharModal) {
-
-        fecharModal.addEventListener(
-            "click",
-            fecharPublicacao
-        );
-
+        fecharModal.addEventListener("click", function () {
+            fecharModalPublicacao();
+        });
     }
-
 
     if (cancelarPublicacao) {
+        cancelarPublicacao.addEventListener("click", function () {
+            fecharModalPublicacao();
+        });
+    }
 
-        cancelarPublicacao.addEventListener(
-            "click",
-            function () {
-
-                fecharPublicacao();
-
-            }
-        );
-
+    if (fecharPlayer) {
+        fecharPlayer.addEventListener("click", function () {
+            fecharModalDoPlayer();
+        });
     }
 
 
-     =========================================================
-     FECHAR CLICANDO FORA
-     =========================================================
-
-    if (modalPublicacao) {
-
-        modalPublicacao.addEventListener(
-            "click",
-            function (evento) {
-
-                if (
-                    evento.target === modalPublicacao
-                ) {
-
-                    fecharPublicacao();
-
-                }
-
-            }
-        );
-
-    }
-
-
-     =========================================================
-     TIPO FILME / SÉRIE
-     =========================================================
+    /* =========================================================
+       TIPO DE CONTEÚDO
+    ========================================================= */
 
     function atualizarTipoConteudo() {
-
-        if (!tipoConteudo) return;
+        if (!tipoConteudo) {
+            return;
+        }
 
         if (tipoConteudo.value === "serie") {
 
@@ -195,7 +188,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (areaVideo) {
-                areaVideo.style.display = "none";
+                areaVideo.style.display = "block";
             }
 
         } else {
@@ -207,59 +200,51 @@ document.addEventListener("DOMContentLoaded", function () {
             if (areaVideo) {
                 areaVideo.style.display = "block";
             }
-
         }
-
     }
 
-
     if (tipoConteudo) {
-
         tipoConteudo.addEventListener(
             "change",
             atualizarTipoConteudo
         );
-
     }
 
 
-     =========================================================
-     TIPO DE ACESSO
-     =========================================================
+    /* =========================================================
+       TIPO DE ACESSO / PREÇO
+    ========================================================= */
 
     function atualizarPreco() {
-
-        if (!tipoAcesso || !areaPreco) return;
+        if (!tipoAcesso || !areaPreco) {
+            return;
+        }
 
         if (
             tipoAcesso.value === "venda" ||
             tipoAcesso.value === "aluguel"
         ) {
-
             areaPreco.style.display = "block";
-
         } else {
-
             areaPreco.style.display = "none";
 
+            if (precoConteudo) {
+                precoConteudo.value = "";
+            }
         }
-
     }
 
-
     if (tipoAcesso) {
-
         tipoAcesso.addEventListener(
             "change",
             atualizarPreco
         );
-
     }
 
 
-     =========================================================
-     PREVIEW DA CAPA MANUAL
-     =========================================================
+    /* =========================================================
+       CAPA MANUAL
+    ========================================================= */
 
     if (arquivoCapa) {
 
@@ -269,166 +254,120 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const arquivo = arquivoCapa.files[0];
 
-                if (!arquivo) return;
+                if (!arquivo) {
+                    return;
+                }
 
-                if (
-                    !arquivo.type.startsWith("image/")
-                ) {
-
-                    alert(
+                if (!arquivo.type.startsWith("image/")) {
+                    mostrarMensagem(
                         "Escolha uma imagem válida para a capa."
                     );
 
                     arquivoCapa.value = "";
-
                     return;
-
                 }
 
-                capaManual = true;
-
-                const leitor =
-                    new FileReader();
+                const leitor = new FileReader();
 
                 leitor.onload = function (evento) {
 
                     capaSelecionada =
                         evento.target.result;
 
-                    mostrarCapa(
-                        capaSelecionada
-                    );
-
+                    if (previewCapa) {
+                        previewCapa.innerHTML =
+                            '<img src="' +
+                            capaSelecionada +
+                            '" alt="Capa">';
+                    }
                 };
 
                 leitor.readAsDataURL(arquivo);
-
             }
         );
-
     }
 
 
-     =========================================================
-     MOSTRAR CAPA
-     =========================================================
-
-    function mostrarCapa(src) {
-
-        if (!previewCapa) return;
-
-        previewCapa.innerHTML = "";
-
-        const imagem =
-            document.createElement("img");
-
-        imagem.src = src;
-
-        imagem.style.width = "100%";
-        imagem.style.height = "100%";
-        imagem.style.objectFit = "cover";
-        imagem.style.borderRadius = "12px";
-
-        previewCapa.appendChild(imagem);
-
-    }
-
-
-     =========================================================
-     ÁREA DAS 5 CAPAS AUTOMÁTICAS
-     =========================================================
+    /* =========================================================
+       ÁREA DAS 5 CAPAS AUTOMÁTICAS
+    ========================================================= */
 
     function criarAreaCapasAutomaticas() {
 
-        let area =
+        if (!previewCapa) {
+            return;
+        }
+
+        let areaExistente =
             document.getElementById(
                 "areaCapasAutomaticas"
             );
 
-        if (area) return area;
+        if (areaExistente) {
+            return areaExistente;
+        }
 
-        area =
+        const area =
             document.createElement("div");
 
-        area.id =
-            "areaCapasAutomaticas";
+        area.id = "areaCapasAutomaticas";
 
         area.style.marginTop = "15px";
+        area.style.padding = "15px";
+        area.style.borderRadius = "12px";
+        area.style.background = "rgba(255,255,255,0.05)";
 
         area.innerHTML =
 
-            '<h3>🤖 Escolha uma capa automática</h3>' +
+            "<h3>🤖 Escolha a melhor capa</h3>" +
 
-            '<p style="font-size:13px;">' +
-            'Escolha uma das 5 imagens geradas pelo vídeo.' +
-            '</p>' +
+            "<p>" +
+            "O sistema vai criar automaticamente " +
+            "5 opções a partir do vídeo." +
+            "</p>" +
 
-            '<div id="listaCapasAutomaticas" ' +
+            '<div id="capasAutomaticas" ' +
             'style="display:grid;' +
             'grid-template-columns:repeat(5,1fr);' +
-            'gap:8px;">' +
-            '</div>' +
+            'gap:10px;"></div>' +
 
-            '<div style="margin-top:12px;">' +
+            '<div style="margin-top:15px;">' +
 
-            '<label>🎯 Escolher outro momento do vídeo</label>' +
+            "<label>" +
+            "🎯 Escolher outro momento do vídeo" +
+            "</label>" +
 
-            '<input ' +
-            'type="range" ' +
-            'id="sliderCapa" ' +
-            'min="0" ' +
-            'max="100" ' +
-            'value="50" ' +
+            '<input type="range" ' +
+            'id="controleMomentoCapa" ' +
+            'min="0" max="100" value="50" ' +
             'style="width:100%;">' +
 
-            '<button ' +
-            'type="button" ' +
+            '<button type="button" ' +
             'id="gerarOutraCapa" ' +
-            'style="margin-top:8px;">' +
+            'style="margin-top:10px;">' +
+            "🔄 Gerar outra capa" +
+            "</button>" +
 
-            '🔄 Gerar outra capa' +
+            "</div>";
 
-            '</button>' +
-
-            '</div>';
-
-        if (previewCapa) {
-
-            previewCapa.parentNode.insertBefore(
-                area,
-                previewCapa.nextSibling
-            );
-
-        }
+        previewCapa.parentNode.insertBefore(
+            area,
+            previewCapa.nextSibling
+        );
 
         return area;
-
     }
 
 
-     =========================================================
-     GERAR CAPAS DO VÍDEO
-     =========================================================
+    /* =========================================================
+       CRIAR CAPA A PARTIR DE UM FRAME DO VÍDEO
+    ========================================================= */
 
-    function gerarCapasDoVideo(arquivo) {
-
-        if (!arquivo) return;
-
-        if (
-            !arquivo.type.startsWith("video/")
-        ) {
-
-            alert(
-                "O arquivo selecionado não é um vídeo."
-            );
-
-            return;
-
-        }
-
-        videoSelecionado = arquivo;
-
-        capaManual = false;
+    function criarCapaDoVideo(
+        arquivo,
+        porcentagem,
+        callback
+    ) {
 
         const url =
             URL.createObjectURL(arquivo);
@@ -436,412 +375,343 @@ document.addEventListener("DOMContentLoaded", function () {
         const video =
             document.createElement("video");
 
-        video.preload = "metadata";
-
-        video.muted = true;
-
-        video.playsInline = true;
-
         video.src = url;
+        video.muted = true;
+        video.playsInline = true;
+        video.preload = "metadata";
 
         video.addEventListener(
             "loadedmetadata",
             function () {
 
-                if (
-                    !video.duration ||
-                    !isFinite(video.duration)
-                ) {
+                let tempo =
+                    video.duration *
+                    (porcentagem / 100);
 
-                    alert(
-                        "Não foi possível ler a duração do vídeo."
-                    );
-
-                    URL.revokeObjectURL(url);
-
-                    return;
-
+                if (!isFinite(tempo)) {
+                    tempo = 0;
                 }
 
-                criarAreaCapasAutomaticas();
+                if (tempo < 0) {
+                    tempo = 0;
+                }
 
-                gerarCincoCapas(
-                    video,
-                    video.duration,
-                    url
-                );
+                if (tempo > video.duration) {
+                    tempo = video.duration;
+                }
 
+                video.currentTime = tempo;
             }
         );
 
-    }
+        video.addEventListener(
+            "seeked",
+            function () {
 
+                try {
 
-     =========================================================
-     GERAR 5 CAPAS
-     =========================================================
+                    const canvas =
+                        document.createElement("canvas");
 
-    function gerarCincoCapas(
-        video,
-        duracao,
-        url
-    ) {
+                    canvas.width =
+                        video.videoWidth || 640;
 
-        capasAutomaticas = [];
+                    canvas.height =
+                        video.videoHeight || 360;
 
-        const porcentagens = [
-            0.05,
-            0.20,
-            0.40,
-            0.60,
-            0.80
-        ];
+                    const contexto =
+                        canvas.getContext("2d");
 
-        let indice = 0;
+                    contexto.drawImage(
+                        video,
+                        0,
+                        0,
+                        canvas.width,
+                        canvas.height
+                    );
 
-        function proxima() {
+                    const imagem =
+                        canvas.toDataURL(
+                            "image/jpeg",
+                            0.85
+                        );
 
-            if (
-                indice >=
-                porcentagens.length
-            ) {
+                    callback(imagem);
 
-                mostrarCapasAutomaticas();
+                } catch (erro) {
+
+                    console.error(
+                        "Erro ao criar capa:",
+                        erro
+                    );
+
+                    callback(null);
+
+                } finally {
+
+                    URL.revokeObjectURL(url);
+                }
+            }
+        );
+
+        video.addEventListener(
+            "error",
+            function () {
 
                 URL.revokeObjectURL(url);
 
-                return;
-
-            }
-
-            const tempo =
-                Math.max(
-                    0,
-                    Math.min(
-                        duracao - 0.1,
-                        duracao *
-                        porcentagens[indice]
-                    )
-                );
-
-            video.currentTime = tempo;
-
-        }
-
-
-        video.addEventListener(
-            "seeked",
-            function capturar() {
-
-                const canvas =
-                    document.createElement(
-                        "canvas"
-                    );
-
-                canvas.width =
-                    video.videoWidth ||
-                    640;
-
-                canvas.height =
-                    video.videoHeight ||
-                    360;
-
-                const contexto =
-                    canvas.getContext(
-                        "2d"
-                    );
-
-                contexto.drawImage(
-                    video,
-                    0,
-                    0,
-                    canvas.width,
-                    canvas.height
-                );
-
-                const imagem =
-                    canvas.toDataURL(
-                        "image/jpeg",
-                        0.85
-                    );
-
-                capasAutomaticas.push(
-                    imagem
-                );
-
-                indice++;
-
-                proxima();
-
-            },
-            {
-                once: false
+                callback(null);
             }
         );
-
-        proxima();
-
     }
 
 
-     =========================================================
-     MOSTRAR AS 5 CAPAS
-     =========================================================
+    /* =========================================================
+       GERAR 5 CAPAS
+    ========================================================= */
 
-    function mostrarCapasAutomaticas() {
+    function gerarCincoCapas(arquivo) {
 
-        const lista =
+        if (!arquivo) {
+            return;
+        }
+
+        if (!arquivo.type.startsWith("video/")) {
+            return;
+        }
+
+        const area =
+            criarAreaCapasAutomaticas();
+
+        const container =
             document.getElementById(
-                "listaCapasAutomaticas"
+                "capasAutomaticas"
             );
 
-        if (!lista) return;
+        if (!container) {
+            return;
+        }
 
-        lista.innerHTML = "";
+        container.innerHTML =
+            "<p>⏳ Criando capas automaticamente...</p>";
 
-        capasAutomaticas.forEach(
-            function (capa, indice) {
+        const porcentagens = [
+            5,
+            20,
+            40,
+            60,
+            80
+        ];
 
-                const imagem =
-                    document.createElement(
-                        "img"
-                    );
+        const capas = [];
 
-                imagem.src = capa;
+        let concluido = 0;
 
-                imagem.title =
-                    "Capa " +
-                    (indice + 1);
+        porcentagens.forEach(
+            function (porcentagem, indice) {
 
-                imagem.style.width =
-                    "100%";
+                criarCapaDoVideo(
+                    arquivo,
+                    porcentagem,
+                    function (imagem) {
 
-                imagem.style.aspectRatio =
-                    "16 / 9";
+                        concluido++;
 
-                imagem.style.objectFit =
-                    "cover";
+                        capas[indice] =
+                            imagem;
 
-                imagem.style.borderRadius =
-                    "8px";
+                        if (
+                            concluido ===
+                            porcentagens.length
+                        ) {
 
-                imagem.style.cursor =
-                    "pointer";
+                            container.innerHTML =
+                                "";
 
-                imagem.style.border =
-                    "3px solid transparent";
+                            capas.forEach(
+                                function (
+                                    capa,
+                                    numero
+                                ) {
 
+                                    if (!capa) {
+                                        return;
+                                    }
 
-                imagem.addEventListener(
-                    "click",
-                    function () {
+                                    const div =
+                                        document.createElement(
+                                            "div"
+                                        );
 
-                        capaSelecionada =
-                            capa;
+                                    div.style.cursor =
+                                        "pointer";
 
-                        capaManual = false;
-
-                        mostrarCapa(
-                            capa
-                        );
-
-                        document
-                            .querySelectorAll(
-                                "#listaCapasAutomaticas img"
-                            )
-                            .forEach(
-                                function (img) {
-
-                                    img.style.border =
+                                    div.style.border =
                                         "3px solid transparent";
 
+                                    div.style.borderRadius =
+                                        "10px";
+
+                                    div.style.overflow =
+                                        "hidden";
+
+                                    const img =
+                                        document.createElement(
+                                            "img"
+                                        );
+
+                                    img.src =
+                                        capa;
+
+                                    img.alt =
+                                        "Capa " +
+                                        (numero + 1);
+
+                                    img.style.width =
+                                        "100%";
+
+                                    img.style.height =
+                                        "120px";
+
+                                    img.style.objectFit =
+                                        "cover";
+
+                                    div.appendChild(
+                                        img
+                                    );
+
+                                    div.addEventListener(
+                                        "click",
+                                        function () {
+
+                                            capaSelecionada =
+                                                capa;
+
+                                            if (
+                                                previewCapa
+                                            ) {
+
+                                                previewCapa.innerHTML =
+                                                    '<img src="' +
+                                                    capa +
+                                                    '" alt="Capa escolhida">';
+                                            }
+
+                                            document
+                                                .querySelectorAll(
+                                                    "#capasAutomaticas > div"
+                                                )
+                                                .forEach(
+                                                    function (
+                                                        item
+                                                    ) {
+                                                        item.style.border =
+                                                            "3px solid transparent";
+                                                    }
+                                                );
+
+                                            div.style.border =
+                                                "3px solid #00ff88";
+                                        }
+                                    );
+
+                                    container.appendChild(
+                                        div
+                                    );
+
+                                    if (numero === 0) {
+
+                                        setTimeout(
+                                            function () {
+
+                                                div.click();
+
+                                            },
+                                            50
+                                        );
+                                    }
                                 }
                             );
 
-                        imagem.style.border =
-                            "3px solid #00c853";
+                            const botaoOutra =
+                                document.getElementById(
+                                    "gerarOutraCapa"
+                                );
 
+                            const controle =
+                                document.getElementById(
+                                    "controleMomentoCapa"
+                                );
+
+                            if (
+                                botaoOutra &&
+                                controle
+                            ) {
+
+                                botaoOutra.onclick =
+                                    function () {
+
+                                        const valor =
+                                            Number(
+                                                controle.value
+                                            );
+
+                                        botaoOutra.disabled =
+                                            true;
+
+                                        botaoOutra.textContent =
+                                            "⏳ Gerando...";
+
+                                        criarCapaDoVideo(
+                                            arquivo,
+                                            valor,
+                                            function (
+                                                novaCapa
+                                            ) {
+
+                                                botaoOutra.disabled =
+                                                    false;
+
+                                                botaoOutra.textContent =
+                                                    "🔄 Gerar outra capa";
+
+                                                if (
+                                                    novaCapa
+                                                ) {
+
+                                                    capaSelecionada =
+                                                        novaCapa;
+
+                                                    if (
+                                                        previewCapa
+                                                    ) {
+
+                                                        previewCapa.innerHTML =
+                                                            '<img src="' +
+                                                            novaCapa +
+                                                            '" alt="Nova capa">';
+                                                    }
+                                                }
+                                            }
+                                        );
+                                    };
+                            }
+
+                            if (area) {
+                                area.style.display =
+                                    "block";
+                            }
+                        }
                     }
                 );
-
-
-                lista.appendChild(
-                    imagem
-                );
-
             }
         );
-
-
-        if (
-            capasAutomaticas.length > 0
-        ) {
-
-            capaSelecionada =
-                capasAutomaticas[0];
-
-            mostrarCapa(
-                capaSelecionada
-            );
-
-            const primeira =
-                lista.querySelector(
-                    "img"
-                );
-
-            if (primeira) {
-
-                primeira.style.border =
-                    "3px solid #00c853";
-
-            }
-
-        }
-
     }
 
 
-     =========================================================
-     ESCOLHER OUTRA CAPA PELO SLIDER
-     =========================================================
-
-    function gerarOutraCapa() {
-
-        if (!videoSelecionado) {
-
-            alert(
-                "Primeiro selecione um vídeo."
-            );
-
-            return;
-
-        }
-
-        const slider =
-            document.getElementById(
-                "sliderCapa"
-            );
-
-        if (!slider) return;
-
-        const porcentagem =
-            Number(slider.value) / 100;
-
-        const url =
-            URL.createObjectURL(
-                videoSelecionado
-            );
-
-        const video =
-            document.createElement(
-                "video"
-            );
-
-        video.preload = "metadata";
-
-        video.muted = true;
-
-        video.playsInline = true;
-
-        video.src = url;
-
-
-        video.addEventListener(
-            "loadedmetadata",
-            function () {
-
-                const tempo =
-                    Math.max(
-                        0,
-                        Math.min(
-                            video.duration - 0.1,
-                            video.duration *
-                            porcentagem
-                        )
-                    );
-
-                video.currentTime =
-                    tempo;
-
-            }
-        );
-
-
-        video.addEventListener(
-            "seeked",
-            function () {
-
-                const canvas =
-                    document.createElement(
-                        "canvas"
-                    );
-
-                canvas.width =
-                    video.videoWidth ||
-                    640;
-
-                canvas.height =
-                    video.videoHeight ||
-                    360;
-
-                const contexto =
-                    canvas.getContext(
-                        "2d"
-                    );
-
-                contexto.drawImage(
-                    video,
-                    0,
-                    0,
-                    canvas.width,
-                    canvas.height
-                );
-
-                capaSelecionada =
-                    canvas.toDataURL(
-                        "image/jpeg",
-                        0.85
-                    );
-
-                mostrarCapa(
-                    capaSelecionada
-                );
-
-                capaManual = false;
-
-                URL.revokeObjectURL(
-                    url
-                );
-
-            },
-            {
-                once: true
-            }
-        );
-
-    }
-
-
-    document.addEventListener(
-        "click",
-        function (evento) {
-
-            if (
-                evento.target.id ===
-                "gerarOutraCapa"
-            ) {
-
-                gerarOutraCapa();
-
-            }
-
-        }
-    );
-
-
-     =========================================================
-     SELECIONAR VÍDEO
-     =========================================================
+    /* =========================================================
+       SELEÇÃO DO VÍDEO
+    ========================================================= */
 
     if (arquivoVideo) {
 
@@ -852,526 +722,464 @@ document.addEventListener("DOMContentLoaded", function () {
                 const arquivo =
                     arquivoVideo.files[0];
 
-                if (!arquivo) return;
+                if (!arquivo) {
+                    return;
+                }
 
-                gerarCapasDoVideo(
-                    arquivo
-                );
+                if (!arquivo.type.startsWith("video/")) {
 
+                    mostrarMensagem(
+                        "Por favor, selecione um vídeo válido."
+                    );
+
+                    arquivoVideo.value = "";
+                    return;
+                }
+
+                videoPrincipalURL =
+                    URL.createObjectURL(
+                        arquivo
+                    );
+
+                gerarCincoCapas(arquivo);
             }
         );
-
     }
 
 
-     =========================================================
-     CRIAR TEMPORADAS
-     =========================================================
+    /* =========================================================
+       GERAR EPISÓDIOS DAS SÉRIES
+    ========================================================= */
 
-    function criarTemporadas() {
+    function gerarCamposTemporadas() {
 
-        if (!listaTemporadas) return;
+        if (!listaTemporadas) {
+            return;
+        }
 
-        listaTemporadas.innerHTML = "";
+        listaTemporadas.innerHTML =
+            "";
 
-        const quantidade =
+        const temporadas =
             Number(
                 quantidadeTemporadas
                     ? quantidadeTemporadas.value
                     : 0
             );
 
+        const episodios =
+            Number(
+                quantidadeEpisodios
+                    ? quantidadeEpisodios.value
+                    : 0
+            );
+
         if (
-            !quantidade ||
-            quantidade < 1
+            temporadas < 1 ||
+            episodios < 1
         ) {
-
             return;
-
         }
 
         for (
-            let i = 1;
-            i <= quantidade;
-            i++
+            let temporada = 1;
+            temporada <= temporadas;
+            temporada++
         ) {
 
             const bloco =
-                document.createElement(
-                    "div"
-                );
+                document.createElement("div");
 
-            bloco.style.marginTop =
-                "15px";
+            bloco.className =
+                "temporada";
 
-            bloco.style.padding =
-                "12px";
-
-            bloco.style.border =
-                "1px solid #ddd";
-
-            bloco.style.borderRadius =
-                "10px";
-
+            bloco.style.marginBottom =
+                "20px";
 
             bloco.innerHTML =
+                "<h4>" +
+                "📺 Temporada " +
+                temporada +
+                "</h4>";
 
-                "<h4>📺 Temporada " +
-                i +
-                "</h4>" +
+            for (
+                let episodio = 1;
+                episodio <= episodios;
+                episodio++
+            ) {
 
-                '<label>Episódios</label>' +
+                const grupo =
+                    document.createElement(
+                        "div"
+                    );
 
-                '<input ' +
-                'type="number" ' +
-                'class="episodios-temporada" ' +
-                'data-temporada="' +
-                i +
-                '" ' +
-                'min="1" ' +
-                'placeholder="Quantidade de episódios">';
+                grupo.style.marginBottom =
+                    "8px";
 
+                grupo.innerHTML =
+
+                    "<label>" +
+                    "Episódio " +
+                    episodio +
+                    "</label>" +
+
+                    '<input type="text" ' +
+                    'class="titulo-episodio" ' +
+                    'data-temporada="' +
+                    temporada +
+                    '" ' +
+                    'data-episodio="' +
+                    episodio +
+                    '" ' +
+                    'placeholder="Nome do episódio">';
+
+                bloco.appendChild(
+                    grupo
+                );
+            }
 
             listaTemporadas.appendChild(
                 bloco
             );
-
         }
-
     }
-
 
     if (quantidadeTemporadas) {
 
         quantidadeTemporadas.addEventListener(
             "input",
-            criarTemporadas
+            gerarCamposTemporadas
         );
-
     }
-
 
     if (quantidadeEpisodios) {
 
         quantidadeEpisodios.addEventListener(
             "input",
-            function () {
-
-                if (
-                    quantidadeTemporadas &&
-                    Number(
-                        quantidadeTemporadas.value
-                    ) === 1
-                ) {
-
-                    criarTemporadas();
-
-                }
-
-            }
+            gerarCamposTemporadas
         );
-
     }
 
 
-     =========================================================
-     ESCAPAR HTML
-     =========================================================
+    /* =========================================================
+       CRIAR CARD DO FILME/SÉRIE
+    ========================================================= */
 
-    function escaparHTML(texto) {
+    function criarCard(dados) {
 
-        const div =
-            document.createElement(
-                "div"
-            );
+        if (!listaFilmes) {
+            return;
+        }
 
-        div.textContent =
-            texto || "";
-
-        return div.innerHTML;
-
-    }
-
-
-     =========================================================
-     CRIAR CARD
-     =========================================================
-
-    function criarCard(conteudo) {
+        numeroPublicacao++;
 
         const card =
-            document.createElement(
-                "article"
-            );
+            document.createElement("article");
 
         card.className =
             "card";
 
-        card.dataset.nome =
-            conteudo.nome.toLowerCase();
+        card.setAttribute(
+            "data-nome",
+            dados.nome.toLowerCase()
+        );
 
+        let imagemCapa =
+            dados.capa;
 
-        const capa =
-            document.createElement(
-                "div"
-            );
+        if (!imagemCapa) {
 
-        capa.className =
-            "capa";
-
-
-        if (conteudo.capa) {
-
-            capa.style.backgroundImage =
-                "url('" +
-                conteudo.capa +
-                "')";
-
-            capa.style.backgroundSize =
-                "cover";
-
-            capa.style.backgroundPosition =
-                "center";
-
-            capa.textContent = "";
-
-        } else {
-
-            capa.textContent =
-                conteudo.tipo === "serie"
-                    ? "📺"
-                    : "🎬";
-
+            if (dados.tipo === "serie") {
+                imagemCapa =
+                    "📺";
+            } else {
+                imagemCapa =
+                    "🎬";
+            }
         }
 
-
-        const titulo =
-            document.createElement(
-                "h3"
-            );
-
-        titulo.textContent =
-            conteudo.nome;
-
-
-        const informacao =
-            document.createElement(
-                "p"
-            );
+        let capaHTML = "";
 
         if (
-            conteudo.tipo === "serie"
+            typeof imagemCapa === "string" &&
+            imagemCapa.startsWith("data:image")
         ) {
 
-            informacao.textContent =
-                "Série • " +
-                conteudo.temporadas +
-                " temporada(s)";
+            capaHTML =
+                '<img src="' +
+                imagemCapa +
+                '" alt="' +
+                escaparHTML(
+                    dados.nome
+                ) +
+                '">';
 
         } else {
 
-            informacao.textContent =
-                "Filme • " +
-                conteudo.ano;
-
+            capaHTML =
+                '<div class="capa-gerada">' +
+                imagemCapa +
+                "</div>";
         }
 
+        let tipoTexto =
+            dados.tipo === "serie"
+                ? "Série"
+                : "Filme";
 
-        const botoes =
-            document.createElement(
-                "div"
-            );
+        let acessoTexto =
+            "Gratuito";
 
-        botoes.className =
-            "botoes";
+        if (dados.acesso === "venda") {
+            acessoTexto =
+                "Venda • " +
+                dados.preco +
+                " Kz";
+        }
 
+        if (dados.acesso === "aluguel") {
+            acessoTexto =
+                "Aluguel • " +
+                dados.preco +
+                " Kz";
+        }
 
-        const botaoPlay =
-            document.createElement(
-                "button"
-            );
+        card.innerHTML =
 
-        botaoPlay.textContent =
-            "▶️";
+            '<div class="capa">' +
+            capaHTML +
+            "</div>" +
 
-        botaoPlay.title =
-            "Reproduzir";
+            "<h3>" +
+            escaparHTML(
+                dados.nome
+            ) +
+            "</h3>" +
 
+            "<p>" +
+            tipoTexto +
+            " • " +
+            escaparHTML(
+                dados.ano
+            ) +
+            "</p>" +
 
-        const botaoDownload =
-            document.createElement(
-                "button"
-            );
+            "<p>" +
+            escaparHTML(
+                acessoTexto
+            ) +
+            "</p>" +
 
-        botaoDownload.textContent =
-            "⬇️";
+            '<div class="botoes">' +
 
-        botaoDownload.title =
-            "Baixar";
+            '<button type="button" ' +
+            'class="botao-play">' +
+            "▶️" +
+            "</button>" +
 
+            '<button type="button" ' +
+            'class="botao-download">' +
+            "⬇️" +
+            "</button>" +
 
-        const botaoCompartilhar =
-            document.createElement(
-                "button"
-            );
+            '<button type="button" ' +
+            'class="botao-share">' +
+            "🔗" +
+            "</button>" +
 
-        botaoCompartilhar.textContent =
-            "🔗";
+            "</div>";
 
-        botaoCompartilhar.title =
-            "Compartilhar";
-
-
-        botaoPlay.addEventListener(
-            "click",
-            function () {
-
-                reproduzirConteudo(
-                    conteudo
-                );
-
-            }
-        );
-
-
-        botaoDownload.addEventListener(
-            "click",
-            function () {
-
-                baixarConteudo(
-                    conteudo
-                );
-
-            }
-        );
-
-
-        botaoCompartilhar.addEventListener(
-            "click",
-            function () {
-
-                compartilharConteudo(
-                    conteudo
-                );
-
-            }
-        );
-
-
-        botoes.appendChild(
-            botaoPlay
-        );
-
-        botoes.appendChild(
-            botaoDownload
-        );
-
-        botoes.appendChild(
-            botaoCompartilhar
-        );
-
-
-        card.appendChild(
-            capa
-        );
-
-        card.appendChild(
-            titulo
-        );
-
-        card.appendChild(
-            informacao
-        );
-
-        card.appendChild(
-            botoes
-        );
-
-
-        listaFilmes.appendChild(
+        listaFilmes.prepend(
             card
         );
 
-    }
 
+        /* =====================================================
+           BOTÃO PLAY
+        ===================================================== */
 
-     =========================================================
-    REPRODUZIR
-    =========================================================
-
-    function reproduzirConteudo(
-        conteudo
-    ) {
-
-        if (!conteudo.video) {
-
-            alert(
-                "Este conteúdo não possui vídeo disponível."
+        const botaoPlay =
+            card.querySelector(
+                ".botao-play"
             );
 
-            return;
+        if (botaoPlay) {
 
-        }
+            botaoPlay.addEventListener(
+                "click",
+                function () {
 
-        if (!modalPlayer) return;
+                    if (!dados.video) {
 
-        videoPlayer.src =
-            conteudo.video;
-
-        tituloPlayer.textContent =
-            conteudo.nome;
-
-        descricaoPlayer.textContent =
-            conteudo.descricao || "";
-
-        modalPlayer.classList.add(
-            "ativo"
-        );
-
-        modalPlayer.style.display =
-            "flex";
-
-        videoPlayer.play().catch(
-            function () {}
-        );
-
-    }
-
-
-    =========================================================
-     FECHAR PLAYER
-     =========================================================
-
-    if (fecharPlayer) {
-
-        fecharPlayer.addEventListener(
-            "click",
-            function () {
-
-                videoPlayer.pause();
-
-                videoPlayer.removeAttribute(
-                    "src"
-                );
-
-                videoPlayer.load();
-
-                modalPlayer.classList.remove(
-                    "ativo"
-                );
-
-                modalPlayer.style.display =
-                    "none";
-
-            }
-        );
-
-    }
-
-
-     =========================================================
-     BAIXAR
-     =========================================================
-
-    function baixarConteudo(
-        conteudo
-    ) {
-
-        if (!conteudo.video) {
-
-            alert(
-                "Não existe vídeo disponível para baixar."
-            );
-
-            return;
-
-        }
-
-        const link =
-            document.createElement(
-                "a"
-            );
-
-        link.href =
-            conteudo.video;
-
-        link.download =
-            conteudo.nome +
-            ".mp4";
-
-        document.body.appendChild(
-            link
-        );
-
-        link.click();
-
-        link.remove();
-
-    }
-
-
-     =========================================================
-     COMPARTILHAR
-     =========================================================
-
-    function compartilharConteudo(
-        conteudo
-    ) {
-
-        const texto =
-            "🎬 " +
-            conteudo.nome +
-            " - I.M.A FILMES";
-
-        if (
-            navigator.share
-        ) {
-
-            navigator.share({
-
-                title:
-                    conteudo.nome,
-
-                text:
-                    texto
-
-            }).catch(
-                function () {}
-            );
-
-        } else {
-
-            navigator.clipboard
-                .writeText(
-                    texto
-                )
-                .then(
-                    function () {
-
-                        alert(
-                            "Informação copiada para compartilhar."
+                        mostrarMensagem(
+                            "Este conteúdo não possui vídeo disponível."
                         );
 
+                        return;
                     }
-                )
-                .catch(
-                    function () {
 
-                        alert(
-                            texto
-                        );
-
+                    if (!modalPlayer ||
+                        !videoPlayer) {
+                        return;
                     }
-                );
 
+                    tituloPlayer.textContent =
+                        dados.nome;
+
+                    if (descricaoPlayer) {
+
+                        descricaoPlayer.textContent =
+                            dados.descricao || "";
+                    }
+
+                    videoPlayer.src =
+                        dados.video;
+
+                    modalPlayer.classList.add(
+                        "ativo"
+                    );
+
+                    modalPlayer.style.display =
+                        "flex";
+
+                    videoPlayer.play().catch(
+                        function () {
+                            console.log(
+                                "Clique no play para iniciar o vídeo."
+                            );
+                        }
+                    );
+                }
+            );
         }
 
+
+        /* =====================================================
+           BOTÃO DOWNLOAD
+        ===================================================== */
+
+        const botaoDownload =
+            card.querySelector(
+                ".botao-download"
+            );
+
+        if (botaoDownload) {
+
+            botaoDownload.addEventListener(
+                "click",
+                function () {
+
+                    if (!dados.video) {
+
+                        mostrarMensagem(
+                            "Não existe vídeo para baixar."
+                        );
+
+                        return;
+                    }
+
+                    const link =
+                        document.createElement(
+                            "a"
+                        );
+
+                    link.href =
+                        dados.video;
+
+                    link.download =
+                        dados.nome +
+                        ".mp4";
+
+                    document.body.appendChild(
+                        link
+                    );
+
+                    link.click();
+
+                    document.body.removeChild(
+                        link
+                    );
+                }
+            );
+        }
+
+
+        /* =====================================================
+           BOTÃO PARTILHAR
+        ===================================================== */
+
+        const botaoShare =
+            card.querySelector(
+                ".botao-share"
+            );
+
+        if (botaoShare) {
+
+            botaoShare.addEventListener(
+                "click",
+                function () {
+
+                    const texto =
+                        "🎬 Confira este conteúdo no I.M.A FILMES: " +
+                        dados.nome;
+
+                    if (
+                        navigator.share
+                    ) {
+
+                        navigator.share({
+                            title:
+                                dados.nome,
+
+                            text:
+                                texto
+                        }).catch(
+                            function () {}
+                        );
+
+                    } else {
+
+                        if (
+                            navigator.clipboard
+                        ) {
+
+                            navigator.clipboard
+                                .writeText(
+                                    texto
+                                )
+                                .then(
+                                    function () {
+
+                                        mostrarMensagem(
+                                            "Texto copiado para partilhar!"
+                                        );
+                                    }
+                                )
+                                .catch(
+                                    function () {
+
+                                        mostrarMensagem(
+                                            texto
+                                        );
+                                    }
+                                );
+
+                        } else {
+
+                            mostrarMensagem(
+                                texto
+                            );
+                        }
+                    }
+                }
+            );
+        }
     }
 
 
-    =========================================================
-     PUBLICAR
-    =========================================================
+    /* =========================================================
+       PUBLICAR CONTEÚDO
+    ========================================================= */
 
     if (salvarPublicacao) {
 
@@ -1379,330 +1187,335 @@ document.addEventListener("DOMContentLoaded", function () {
             "click",
             function () {
 
-                publicarConteudo();
+                /* ---------------------------------------------
+                   VALIDAR NOME
+                --------------------------------------------- */
 
+                const nome =
+                    nomeConteudo
+                        ? nomeConteudo.value.trim()
+                        : "";
+
+                if (nome === "") {
+
+                    mostrarMensagem(
+                        "Digite o nome do filme ou série."
+                    );
+
+                    if (nomeConteudo) {
+                        nomeConteudo.focus();
+                    }
+
+                    return;
+                }
+
+
+                /* ---------------------------------------------
+                   VALIDAR DESCRIÇÃO
+                --------------------------------------------- */
+
+                const descricao =
+                    descricaoConteudo
+                        ? descricaoConteudo.value.trim()
+                        : "";
+
+
+                /* ---------------------------------------------
+                   VALIDAR ANO
+                --------------------------------------------- */
+
+                const ano =
+                    anoConteudo
+                        ? anoConteudo.value
+                        : "";
+
+                if (ano === "") {
+
+                    mostrarMensagem(
+                        "Digite o ano do conteúdo."
+                    );
+
+                    if (anoConteudo) {
+                        anoConteudo.focus();
+                    }
+
+                    return;
+                }
+
+
+                /* ---------------------------------------------
+                   VALIDAR VÍDEO
+                --------------------------------------------- */
+
+                if (
+                    !arquivoVideo ||
+                    !arquivoVideo.files ||
+                    arquivoVideo.files.length === 0
+                ) {
+
+                    mostrarMensagem(
+                        "Selecione o vídeo que deseja publicar."
+                    );
+
+                    if (arquivoVideo) {
+                        arquivoVideo.click();
+                    }
+
+                    return;
+                }
+
+                const arquivo =
+                    arquivoVideo.files[0];
+
+                if (!arquivo.type.startsWith("video/")) {
+
+                    mostrarMensagem(
+                        "O arquivo selecionado não é um vídeo válido."
+                    );
+
+                    return;
+                }
+
+
+                /* ---------------------------------------------
+                   VALIDAR CAPA
+                --------------------------------------------- */
+
+                if (!capaSelecionada) {
+
+                    mostrarMensagem(
+                        "Aguarde a criação da capa automática ou escolha uma capa."
+                    );
+
+                    gerarCincoCapas(
+                        arquivo
+                    );
+
+                    return;
+                }
+
+
+                /* ---------------------------------------------
+                   VALIDAR REGRAS
+                --------------------------------------------- */
+
+                if (
+                    aceitarRegras &&
+                    !aceitarRegras.checked
+                ) {
+
+                    mostrarMensagem(
+                        "Você precisa confirmar que possui direito de publicar este conteúdo."
+                    );
+
+                    return;
+                }
+
+
+                /* ---------------------------------------------
+                   PREÇO
+                --------------------------------------------- */
+
+                let preco =
+                    "";
+
+                if (
+                    tipoAcesso &&
+                    (
+                        tipoAcesso.value === "venda" ||
+                        tipoAcesso.value === "aluguel"
+                    )
+                ) {
+
+                    preco =
+                        precoConteudo
+                            ? precoConteudo.value
+                            : "";
+
+                    if (
+                        preco === "" ||
+                        Number(preco) <= 0
+                    ) {
+
+                        mostrarMensagem(
+                            "Digite um preço válido."
+                        );
+
+                        if (precoConteudo) {
+                            precoConteudo.focus();
+                        }
+
+                        return;
+                    }
+                }
+
+
+                /* ---------------------------------------------
+                   DADOS DO CONTEÚDO
+                --------------------------------------------- */
+
+                const dados = {
+
+                    id:
+                        Date.now() +
+                        "_" +
+                        numeroPublicacao,
+
+                    tipo:
+                        tipoConteudo
+                            ? tipoConteudo.value
+                            : "filme",
+
+                    nome:
+                        nome,
+
+                    descricao:
+                        descricao,
+
+                    ano:
+                        ano,
+
+                    capa:
+                        capaSelecionada,
+
+                    video:
+                        videoPrincipalURL,
+
+                    acesso:
+                        tipoAcesso
+                            ? tipoAcesso.value
+                            : "gratis",
+
+                    preco:
+                        preco
+                };
+
+
+                /* ---------------------------------------------
+                   SÉRIE
+                --------------------------------------------- */
+
+                if (
+                    dados.tipo === "serie"
+                ) {
+
+                    dados.temporadas =
+                        quantidadeTemporadas
+                            ? Number(
+                                quantidadeTemporadas.value
+                            )
+                            : 0;
+
+                    dados.episodios =
+                        quantidadeEpisodios
+                            ? Number(
+                                quantidadeEpisodios.value
+                            )
+                            : 0;
+                }
+
+
+                /* ---------------------------------------------
+                   CRIAR CARD
+                --------------------------------------------- */
+
+                criarCard(
+                    dados
+                );
+
+
+                /* ---------------------------------------------
+                   FECHAR MODAL
+                --------------------------------------------- */
+
+                fecharModalPublicacao();
+
+
+                /* ---------------------------------------------
+                   LIMPAR FORMULÁRIO
+                --------------------------------------------- */
+
+                limparFormulario();
+
+
+                /* ---------------------------------------------
+                   MENSAGEM
+                --------------------------------------------- */
+
+                mostrarMensagem(
+                    "✅ Conteúdo publicado com sucesso no I.M.A FILMES!"
+                );
             }
         );
-
     }
 
 
-    function publicarConteudo() {
-
-        const nome =
-            nomeConteudo
-                ? nomeConteudo.value.trim()
-                : "";
-
-        const descricao =
-            descricaoConteudo
-                ? descricaoConteudo.value.trim()
-                : "";
-
-        const ano =
-            anoConteudo
-                ? anoConteudo.value
-                : "";
-
-        const tipo =
-            tipoConteudo
-                ? tipoConteudo.value
-                : "filme";
-
-        const acesso =
-            tipoAcesso
-                ? tipoAcesso.value
-                : "gratis";
-
-        const preco =
-            precoConteudo
-                ? precoConteudo.value
-                : "";
-
-
-         -------------------------
-         VALIDAÇÕES
-        -------------------------
-
-        if (!nome) {
-
-            alert(
-                "Digite o nome do filme ou série."
-            );
-
-            if (nomeConteudo) {
-                nomeConteudo.focus();
-            }
-
-            return;
-
-        }
-
-
-        if (!ano) {
-
-            alert(
-                "Digite o ano do conteúdo."
-            );
-
-            if (anoConteudo) {
-                anoConteudo.focus();
-            }
-
-            return;
-
-        }
-
-
-        if (!capaSelecionada) {
-
-            alert(
-                "Escolha uma capa ou gere uma capa automática."
-            );
-
-            return;
-
-        }
-
-
-        if (
-            tipo === "filme" &&
-            !arquivoVideo.files[0]
-        ) {
-
-            alert(
-                "Selecione o vídeo do filme."
-            );
-
-            if (arquivoVideo) {
-                arquivoVideo.click();
-            }
-
-            return;
-
-        }
-
-
-        if (
-            tipo === "serie" &&
-            !videoSelecionado
-        ) {
-
-            alert(
-                "Selecione pelo menos um vídeo da série."
-            );
-
-            return;
-
-        }
-
-
-        if (
-            (acesso === "venda" ||
-             acesso === "aluguel") &&
-            (
-                !preco ||
-                Number(preco) <= 0
-            )
-        ) {
-
-            alert(
-                "Digite um preço válido."
-            );
-
-            if (precoConteudo) {
-                precoConteudo.focus();
-            }
-
-            return;
-
-        }
-
-
-        if (
-            aceitarRegras &&
-            !aceitarRegras.checked
-        ) {
-
-            alert(
-                "Você precisa aceitar as regras da plataforma."
-            );
-
-            return;
-
-        }
-
-
-         -------------------------
-         VÍDEO
-         -------------------------
-
-        let videoURL = "";
-
-        if (
-            arquivoVideo &&
-            arquivoVideo.files[0]
-        ) {
-
-            videoURL =
-                URL.createObjectURL(
-                    arquivoVideo.files[0]
-                );
-
-        } else if (
-            videoSelecionado
-        ) {
-
-            videoURL =
-                URL.createObjectURL(
-                    videoSelecionado
-                );
-
-        }
-
-
-         -------------------------
-         TEMPORADAS
-         -------------------------
-
-        let temporadas = 0;
-
-        if (
-            tipo === "serie" &&
-            quantidadeTemporadas
-        ) {
-
-            temporadas =
-                Number(
-                    quantidadeTemporadas.value
-                ) || 1;
-
-        }
-
-
-         -------------------------
-         OBJETO
-         -------------------------
-
-        const conteudo = {
-
-            id:
-                Date.now(),
-
-            nome:
-                nome,
-
-            descricao:
-                descricao,
-
-            ano:
-                ano,
-
-            tipo:
-                tipo,
-
-            acesso:
-                acesso,
-
-            preco:
-                preco,
-
-            capa:
-                capaSelecionada,
-
-            video:
-                videoURL,
-
-            temporadas:
-                temporadas
-
-        };
-
-
-       -------------------------
-         GUARDAR
-         -------------------------
-
-        conteudos.push(
-            conteudo
-        );
-
-
-         -------------------------
-         CRIAR CARD
-         -------------------------
-
-        criarCard(
-            conteudo
-        );
-
-
-         -------------------------
-         FECHAR
-         -------------------------
-
-        alert(
-            "🎉 Conteúdo publicado com sucesso!"
-        );
-
-        fecharPublicacao();
-
-        limparFormulario();
-
-    }
-
-
-     =========================================================
-     LIMPAR FORMULÁRIO
-     =========================================================
+    /* =========================================================
+       LIMPAR FORMULÁRIO
+    ========================================================= */
 
     function limparFormulario() {
 
-        if (nomeConteudo) {
-            nomeConteudo.value = "";
-        }
+        capaSelecionada =
+            "";
 
-        if (descricaoConteudo) {
-            descricaoConteudo.value = "";
-        }
-
-        if (anoConteudo) {
-            anoConteudo.value = "";
-        }
-
-        if (precoConteudo) {
-            precoConteudo.value = "";
-        }
+        videoPrincipalURL =
+            "";
 
         if (arquivoCapa) {
-            arquivoCapa.value = "";
+            arquivoCapa.value =
+                "";
         }
 
         if (arquivoVideo) {
-            arquivoVideo.value = "";
+            arquivoVideo.value =
+                "";
         }
 
-        if (aceitarRegras) {
-            aceitarRegras.checked = false;
+        if (nomeConteudo) {
+            nomeConteudo.value =
+                "";
+        }
+
+        if (descricaoConteudo) {
+            descricaoConteudo.value =
+                "";
+        }
+
+        if (anoConteudo) {
+            anoConteudo.value =
+                "";
         }
 
         if (quantidadeTemporadas) {
-            quantidadeTemporadas.value = "";
+            quantidadeTemporadas.value =
+                "";
         }
 
         if (quantidadeEpisodios) {
-            quantidadeEpisodios.value = "";
+            quantidadeEpisodios.value =
+                "";
         }
 
-        if (listaTemporadas) {
-            listaTemporadas.innerHTML = "";
+        if (precoConteudo) {
+            precoConteudo.value =
+                "";
+        }
+
+        if (aceitarRegras) {
+            aceitarRegras.checked =
+                false;
         }
 
         if (previewCapa) {
 
             previewCapa.innerHTML =
                 "Pré-visualização da capa";
+        }
 
+        if (listaTemporadas) {
+            listaTemporadas.innerHTML =
+                "";
         }
 
         const area =
@@ -1714,20 +1527,24 @@ document.addEventListener("DOMContentLoaded", function () {
             area.remove();
         }
 
-        capaManual = false;
+        if (tipoConteudo) {
+            tipoConteudo.value =
+                "filme";
+        }
 
-        capaSelecionada = "";
+        if (tipoAcesso) {
+            tipoAcesso.value =
+                "gratis";
+        }
 
-        videoSelecionado = null;
-
-        capasAutomaticas = [];
-
+        atualizarTipoConteudo();
+        atualizarPreco();
     }
 
 
-     =========================================================
-     PESQUISA
-     =========================================================
+    /* =========================================================
+       PESQUISA
+    ========================================================= */
 
     if (campoPesquisa) {
 
@@ -1737,20 +1554,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const pesquisa =
                     campoPesquisa.value
-                        .toLowerCase()
-                        .trim();
+                        .trim()
+                        .toLowerCase();
+
+                if (!listaFilmes) {
+                    return;
+                }
 
                 const cards =
-                    document.querySelectorAll(
-                        "#listaFilmes .card"
+                    listaFilmes.querySelectorAll(
+                        ".card"
                     );
 
                 cards.forEach(
                     function (card) {
 
                         const nome =
-                            card.dataset.nome ||
-                            "";
+                            (
+                                card.getAttribute(
+                                    "data-nome"
+                                ) || ""
+                            ).toLowerCase();
 
                         if (
                             nome.includes(
@@ -1765,71 +1589,82 @@ document.addEventListener("DOMContentLoaded", function () {
 
                             card.style.display =
                                 "none";
-
                         }
-
                     }
                 );
-
             }
         );
-
     }
 
 
-     =========================================================
-     ESC PARA FECHAR
-     =========================================================
+    /* =========================================================
+       FECHAR MODAIS CLICANDO FORA
+    ========================================================= */
+
+    if (modalPublicacao) {
+
+        modalPublicacao.addEventListener(
+            "click",
+            function (evento) {
+
+                if (
+                    evento.target ===
+                    modalPublicacao
+                ) {
+
+                    fecharModalPublicacao();
+                }
+            }
+        );
+    }
+
+    if (modalPlayer) {
+
+        modalPlayer.addEventListener(
+            "click",
+            function (evento) {
+
+                if (
+                    evento.target ===
+                    modalPlayer
+                ) {
+
+                    fecharModalDoPlayer();
+                }
+            }
+        );
+    }
+
+
+    /* =========================================================
+       TECLA ESC
+    ========================================================= */
 
     document.addEventListener(
         "keydown",
         function (evento) {
 
             if (
-                evento.key === "Escape"
+                evento.key ===
+                "Escape"
             ) {
 
-                if (
-                    modalPublicacao
-                ) {
+                fecharModalPublicacao();
 
-                    fecharPublicacao();
-
-                }
-
-                if (
-                    modalPlayer
-                ) {
-
-                    modalPlayer.style.display =
-                        "none";
-
-                    if (videoPlayer) {
-
-                        videoPlayer.pause();
-
-                    }
-
-                }
-
+                fecharModalDoPlayer();
             }
-
         }
     );
 
 
-     =========================================================
-     INICIALIZAÇÃO
-     =========================================================
+    /* =========================================================
+       INICIALIZAÇÃO
+    ========================================================= */
 
     atualizarTipoConteudo();
-
     atualizarPreco();
 
-
     console.log(
-        "✅ I.M.A FILMES carregado corretamente."
+        "I.M.A FILMES carregado corretamente"
     );
-
 });
-```
