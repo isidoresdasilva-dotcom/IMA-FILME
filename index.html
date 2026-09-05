@@ -3,132 +3,563 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>I.M.A Filmes</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <header class="topo">
-    <div class="logo">🎬 I.M.A <span>FILMES</span></div>
+
+    <div class="logo">
+        🎬 I.M.A <span>FILMES</span>
+    </div>
 
     <div class="pesquisa">
         🔎
-        <input type="text" placeholder="Pesquisar filmes e séries...">
+        <input
+            type="text"
+            id="campoPesquisa"
+            placeholder="Pesquisar filmes e séries..."
+        >
     </div>
 
     <div class="acoes">
-        <button>🔔</button>
-        <button>⚙️</button>
-        <button class="perfil">👤</button>
+
+        <button title="Notificações">
+            🔔
+        </button>
+
+        <button title="Configurações">
+            ⚙️
+        </button>
+
+        <button class="perfil" title="Perfil">
+            👤
+        </button>
+
     </div>
+
 </header>
+
 
 <div class="estrutura">
 
+
+    <!-- MENU -->
+
     <aside class="menu">
 
-        <button class="menu-ativo">🏠 Início</button>
-        <button>🎬 Filmes</button>
-        <button>📺 Séries</button>
-        <button>⭐ Favoritos</button>
+        <button class="menu-ativo">
+            🏠 Início
+        </button>
+
+        <button>
+            🎬 Filmes
+        </button>
+
+        <button>
+            📺 Séries
+        </button>
+
+        <button>
+            ⭐ Favoritos
+        </button>
 
         <hr>
-<button class="enviar" id="botaoEnviarMenu">
-    📤 Enviar Filme
-</button>
-        <button>🗂️ Minha Biblioteca</button>
+
+        <button
+            class="enviar"
+            id="botaoEnviarMenu"
+        >
+            📤 Publicar conteúdo
+        </button>
+
+        <button>
+            🗂️ Minha Biblioteca
+        </button>
+
+        <button>
+            💰 Minhas vendas
+        </button>
 
         <div class="espaco"></div>
 
-        <button>⚙️ Configurações</button>
-        <button>🔐 Administrador</button>
+        <button>
+            ⚙️ Configurações
+        </button>
+
+        <button>
+            🔐 Administrador
+        </button>
 
     </aside>
 
+
+    <!-- CONTEÚDO -->
+
     <main class="conteudo">
+
+
+        <!-- BANNER -->
 
         <section class="banner">
 
             <div>
-                <p class="pequeno">BEM-VINDO AO</p>
 
-                <h1>I.M.A FILMES</h1>
+                <p class="pequeno">
+                    BEM-VINDO AO
+                </p>
+
+                <h1>
+                    I.M.A FILMES
+                </h1>
 
                 <p>
-                    A sua biblioteca digital para guardar,
-                    organizar e compartilhar seus vídeos.
+                    A plataforma para assistir,
+                    publicar e futuramente vender
+                    filmes e séries.
                 </p>
-<button class="botao-principal" id="botaoEnviar">
-    📤 Enviar primeiro filme
-</button>
 
-<input
-    type="file"
-    id="arquivoVideo"
-    accept="video/*"
-    hidden
->
+                <button
+                    class="botao-principal"
+                    id="botaoEnviar"
+                >
+                    📤 Publicar meu conteúdo
+                </button>
+
             </div>
 
         </section>
 
+
+        <!-- BIBLIOTECA -->
+
         <div class="titulo-secao">
-            <h2>🎬 Minha Biblioteca</h2>
-            <button>Ver todos →</button>
+
+            <h2>
+                🎬 Minha Biblioteca
+            </h2>
+
+            <button>
+                Ver todos →
+            </button>
+
         </div>
 
-        <section class="filmes">
+
+        <section
+            class="filmes"
+            id="listaFilmes"
+        >
+
+
+            <!-- FILME EXEMPLO -->
 
             <article class="card">
-                <div class="capa capa1">🎬</div>
-                <h3>Meu Filme</h3>
-                <p>Filme • 2026</p>
-                <div class="botoes">
-                    <button>▶️</button>
-                    <button>⬇️</button>
-                    <button>🔗</button>
+
+                <div class="capa capa1">
+                    🎬
                 </div>
+
+                <h3>
+                    Meu Filme
+                </h3>
+
+                <p>
+                    Filme • 2026
+                </p>
+
+                <div class="botoes">
+
+                    <button>
+                        ▶️
+                    </button>
+
+                    <button>
+                        ⬇️
+                    </button>
+
+                    <button>
+                        🔗
+                    </button>
+
+                </div>
+
             </article>
 
-            <article class="card">
-                <div class="capa capa2">📺</div>
-                <h3>Minha Série</h3>
-                <p>Série • Temporada 1</p>
-                <div class="botoes">
-                    <button>▶️</button>
-                    <button>⬇️</button>
-                    <button>🔗</button>
-                </div>
-            </article>
+
+            <!-- SÉRIE EXEMPLO -->
 
             <article class="card">
-                <div class="capa capa3">🎞️</div>
-                <h3>Vídeo 3</h3>
-                <p>Filme • 2026</p>
-                <div class="botoes">
-                    <button>▶️</button>
-                    <button>⬇️</button>
-                    <button>🔗</button>
+
+                <div class="capa capa2">
+                    📺
                 </div>
+
+                <h3>
+                    Minha Série
+                </h3>
+
+                <p>
+                    Série • Temporada 1
+                </p>
+
+                <div class="botoes">
+
+                    <button>
+                        ▶️
+                    </button>
+
+                    <button>
+                        ⬇️
+                    </button>
+
+                    <button>
+                        🔗
+                    </button>
+
+                </div>
+
             </article>
 
-            <article class="card">
-                <div class="capa capa4">🍿</div>
-                <h3>Vídeo 4</h3>
-                <p>Série • Temporada 2</p>
-                <div class="botoes">
-                    <button>▶️</button>
-                    <button>⬇️</button>
-                    <button>🔗</button>
-                </div>
-            </article>
 
         </section>
 
     </main>
 
 </div>
+
+
+
+<!-- ================================================= -->
+<!-- JANELA DE PUBLICAÇÃO -->
+<!-- ================================================= -->
+
+<div
+    class="modal"
+    id="modalPublicacao"
+>
+
+    <div class="modal-conteudo">
+
+
+        <div class="modal-cabecalho">
+
+            <h2>
+                📤 Publicar conteúdo
+            </h2>
+
+            <button
+                id="fecharModal"
+                class="fechar"
+            >
+                ✕
+            </button>
+
+        </div>
+
+
+        <p class="subtitulo">
+            Preencha as informações do seu filme ou série.
+        </p>
+
+
+        <!-- TIPO -->
+
+        <label>
+            Tipo de conteúdo
+        </label>
+
+        <select id="tipoConteudo">
+
+            <option value="filme">
+                🎬 Filme
+            </option>
+
+            <option value="serie">
+                📺 Série
+            </option>
+
+        </select>
+
+
+
+        <!-- CAPA -->
+
+        <label>
+            🖼️ Capa
+        </label>
+
+        <input
+            type="file"
+            id="arquivoCapa"
+            accept="image/*"
+        >
+
+        <div
+            id="previewCapa"
+            class="preview-capa"
+        >
+            Pré-visualização da capa
+        </div>
+
+
+
+        <!-- NOME -->
+
+        <label>
+            🎬 Nome do conteúdo
+        </label>
+
+        <input
+            type="text"
+            id="nomeConteudo"
+            placeholder="Digite o nome do filme ou série"
+        >
+
+
+
+        <!-- DESCRIÇÃO -->
+
+        <label>
+            📝 Descrição
+        </label>
+
+        <textarea
+            id="descricaoConteudo"
+            rows="5"
+            placeholder="Escreva uma descrição do filme ou série..."
+        ></textarea>
+
+
+
+        <!-- ANO -->
+
+        <label>
+            📅 Ano
+        </label>
+
+        <input
+            type="number"
+            id="anoConteudo"
+            placeholder="2026"
+            min="1900"
+            max="2100"
+        >
+
+
+
+        <!-- ÁREA DA SÉRIE -->
+
+        <div
+            id="areaSerie"
+            class="area-serie"
+        >
+
+            <h3>
+                📺 Informações da série
+            </h3>
+
+
+            <label>
+                📚 Quantidade de temporadas
+            </label>
+
+            <input
+                type="number"
+                id="quantidadeTemporadas"
+                min="1"
+                placeholder="Ex.: 3"
+            >
+
+
+            <label>
+                🎞️ Quantidade de episódios
+            </label>
+
+            <input
+                type="number"
+                id="quantidadeEpisodios"
+                min="1"
+                placeholder="Ex.: 24"
+            >
+
+
+            <div
+                id="listaTemporadas"
+                class="lista-temporadas"
+            ></div>
+
+        </div>
+
+
+
+        <!-- ÁREA DO VÍDEO -->
+
+        <div
+            id="areaVideo"
+        >
+
+            <label>
+                🎥 Vídeo do conteúdo
+            </label>
+
+            <input
+                type="file"
+                id="arquivoVideo"
+                accept="video/*"
+            >
+
+            <small>
+                Envie somente vídeos que você possui
+                ou tem autorização para distribuir.
+            </small>
+
+        </div>
+
+
+
+        <!-- PREÇO -->
+
+        <label>
+            💰 Tipo de acesso
+        </label>
+
+        <select id="tipoAcesso">
+
+            <option value="gratis">
+                🆓 Gratuito
+            </option>
+
+            <option value="venda">
+                💰 Venda
+            </option>
+
+            <option value="aluguel">
+                🎟️ Aluguel
+            </option>
+
+        </select>
+
+
+
+        <div
+            id="areaPreco"
+            style="display:none;"
+        >
+
+            <label>
+                💵 Preço
+            </label>
+
+            <input
+                type="number"
+                id="precoConteudo"
+                min="0"
+                step="0.01"
+                placeholder="Preço em Kz"
+            >
+
+        </div>
+
+
+
+        <!-- AVISO -->
+
+        <div class="aviso-conteudo">
+
+            ⚠️ <strong>Regras do I.M.A Filmes</strong>
+
+            <p>
+                Não é permitido publicar pornografia,
+                conteúdo ilegal ou material que viole
+                direitos autorais.
+            </p>
+
+        </div>
+
+
+
+        <!-- CONFIRMAÇÃO -->
+
+        <label class="check">
+
+            <input
+                type="checkbox"
+                id="aceitarRegras"
+            >
+
+            Confirmo que tenho direito de publicar
+            este conteúdo e aceito as regras da plataforma.
+
+        </label>
+
+
+
+        <!-- BOTÕES -->
+
+        <div class="acoes-formulario">
+
+            <button
+                id="cancelarPublicacao"
+                class="botao-cancelar"
+            >
+                Cancelar
+            </button>
+
+            <button
+                id="salvarPublicacao"
+                class="botao-salvar"
+            >
+                🚀 Publicar
+            </button>
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+
+<!-- ================================================= -->
+<!-- PLAYER -->
+<!-- ================================================= -->
+
+<div
+    id="modalPlayer"
+    class="modal-player"
+>
+
+    <div class="player-conteudo">
+
+        <button
+            id="fecharPlayer"
+            class="fechar-player"
+        >
+            ✕
+        </button>
+
+        <video
+            id="videoPlayer"
+            controls
+        ></video>
+
+        <h2 id="tituloPlayer">
+            Filme
+        </h2>
+
+        <p id="descricaoPlayer"></p>
+
+    </div>
+
+</div>
+
+
 
 <script src="app.js"></script>
 
