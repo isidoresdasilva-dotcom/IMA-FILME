@@ -5455,3 +5455,610 @@ document.addEventListener("DOMContentLoaded", function () {
 
     iniciarAplicacao();
 });
+                await carregarConteudos();
+
+            } catch (erro) {
+                console.error("Erro ao publicar:", erro);
+                alert(
+                    "❌ Não foi possível publicar o conteúdo.\n\n" +
+                    "Verifique os arquivos e tente novamente."
+                );
+            }
+        });
+    }
+
+    function limparFormulario() {
+        if (nomeConteudo) nomeConteudo.value = "";
+        if (descricaoConteudo) descricaoConteudo.value = "";
+        if (anoConteudo) anoConteudo.value = "";
+        if (arquivoCapa) {
+            arquivoCapa.value = "";
+            arquivoCapa._capaAutomatica = null;
+        }
+        if (arquivoVideo) arquivoVideo.value = "";
+        if (precoConteudo) precoConteudo.value = "";
+        if (aceitarRegras) aceitarRegras.checked = false;
+        if (listaTemporadas) listaTemporadas.innerHTML = "";
+        if (previewCapa) previewCapa.innerHTML = "Pré-visualização da capa";
+
+        atualizarTipoConteudo();
+        atualizarPreco();
+    }
+
+    /* =========================================================
+       FILTROS E BIBLIOTECA
+       ========================================================= */
+
+    function correspondeAoFiltro(conteudo) {
+        if (filtroAtual === "filmes") return conteudo.tipo === "filme";
+        if (filtroAtual === "series") return conteudo.tipo === "serie";
+        if (filtroAtual === "favoritos") return conteudo.favorito === true;
+
+        if (filtroAtual === "vendas") {
+            return conteudo.acesso === "venda" || conteudo.acesso === "aluguel";
+        }
+
+        return true;
+    }
+
+    async function carregarConteudos() {
+        if (!listaFilmes || !db) return;
+
+        limparURLs();
+
+        let brutos = [];
+
+        try {
+            brutos = await obterConteudos();
+        } catch (erro) {
+            console.error("Erro ao ler conteúdos:", erro);
+            return;
+        }
+
+        const conteudos = brutos
+            .map(normalizarConteudo)
+            .filter(Boolean);
+
+        conteudos.sort(function (a, b) {
+            return Number(b.dataPublicacao || 0) - Number(a.dataPublicacao || 0);
+        });
+
+        const pesquisa = campoPesquisa
+            ? campoPesquisa.value.toLowerCase().trim()
+            : "";
+
+        const filtrados = conteudos.filter(function (conteudo) {
+            if (!correspondeAoFiltro(conteudo)) return false;
+
+            if (!pesquisa) return true;
+
+            const texto = (
+                conteudo.nome + " " +
+                conteudo.descricao + " " +
+                conteudo.ano
+            ).toLowerCase();
+
+            return texto.includes(pesquisa);
+        });
+
+        listaFilmes.innerHTML = "";
+
+        if (!filtrados.length) {
+            listaFilmes.innerHTML =
+                `<div style="width:100%;padding:40px;text-align:center;">
+                    <h2>📭 Nenhum conteúdo encontrado</h2>
+                    <p>Publique um filme ou série para começar sua biblioteca.</p>
+                </div>`;
+            return;
+        }
+
+        filtrados.forEach(function (conteudo) {
+            try {
+                listaFilmes.appendChild(criarCard(conteudo));
+            } catch (erro) {
+                console.warn("Um conteúdo não pôde ser exibido:", erro);
+            }
+        });
+    }
+
+    function criarCard(conteudo) {
+        const card = document.createElement("article");
+        card.className = "card";
+
+        const capaURL = criarURL(conteudo.capa, "image/jpeg");
+        const tipoTexto = conteudo.tipo === "serie" ? "📺 Série" : "🎬 Filme";
+        const visualizacoes = totalVisualizacoes(conteudo);
+
+        card.innerHTML = `
+            <div class="capa ima-capa-clicavel"
+                 title="Ver detalhes"
+                 style="position:relative;cursor:pointer;">
+                ${
+                    capaURL
+                    ? `<img src="${capaURL}" alt="${escaparTexto(conteudo.nome)}"
+                            style="width:100%;height:100%;object-fit:cover;">`
+                    : `<div style="font-size:50px;text-align:center;padding:30px;">🎬</div>`
+                }
+
+                ${
+                    conteudo.favorito
+                    ? `<span style="position:absolute;top:8px;right:8px;font-size:22px;">❤️</span>`
+                    : ""
+                }
+            </div>
+
+            <h3 class="ima-titulo-clicavel" style="cursor:pointer;">
+                ${escaparTexto(conteudo.nome)}
+            </h3>
+
+            <p>${tipoTexto} • ${escaparTexto(conteudo.ano)}</p>
+
+            <p style="font-size:12px;opacity:.8;">
+                ${escaparTexto(textoAcesso(conteudo))}
+            </p>
+
+            <p style="font-size:12px;">
+                👁️ ${visualizacoes} visualizações
+            </p>
+
+            ${
+                Number(conteudo.progresso || 0) > 0
+                ? `<div style="margin-top:8px;font-size:12px;">
+                       ▶️ ${Math.round(conteudo.progresso)}% assistido
+                   </div>`
+                : ""
+            }
+
+            <div class="botoes">
+                <button class="botao-play" title="Assistir">▶️</button>
+                <button class="botao-detalhes" title="Detalhes">ℹ️</button>
+                <button class="botao-favorito" title="Favorito">
+                    ${conteudo.favorito ? "❤️" : "🤍"}
+                </button>
+                <button class="botao-share" title="Partilhar">🔗</button>
+                <button class="botao-download" title="Baixar">⬇️</button>
+                <button class="botao-apagar" title="Apagar">🗑️</button>
+            </div>
+        `;
+
+        const capa = card.querySelector(".ima-capa-clicavel");
+        const titulo = card.querySelector(".ima-titulo-clicavel");
+        const detalhes = card.querySelector(".botao-detalhes");
+
+        if (capa) capa.addEventListener("click", function () { abrirDetalhes(conteudo); });
+        if (titulo) titulo.addEventListener("click", function () { abrirDetalhes(conteudo); });
+        if (detalhes) detalhes.addEventListener("click", function () { abrirDetalhes(conteudo); });
+
+        const botaoPlay = card.querySelector(".botao-play");
+
+        if (botaoPlay) {
+            botaoPlay.addEventListener("click", function () {
+                if (conteudo.tipo === "filme") {
+                    reproduzirFilme(conteudo);
+                } else {
+                    abrirDetalhes(conteudo);
+                }
+            });
+        }
+
+        const botaoFavorito = card.querySelector(".botao-favorito");
+
+        if (botaoFavorito) {
+            botaoFavorito.addEventListener("click", async function () {
+                conteudo.favorito = !conteudo.favorito;
+                await atualizarConteudo(conteudo);
+                await carregarConteudos();
+            });
+        }
+
+        const botaoShare = card.querySelector(".botao-share");
+
+        if (botaoShare) {
+            botaoShare.addEventListener("click", function () {
+                partilhar(conteudo);
+            });
+        }
+
+        const botaoDownload = card.querySelector(".botao-download");
+
+        if (botaoDownload) {
+            botaoDownload.addEventListener("click", function () {
+                if (conteudo.tipo === "filme") {
+                    baixarVideo(conteudo.video, conteudo.nome);
+                } else {
+                    abrirDetalhes(conteudo);
+                }
+            });
+        }
+
+        const botaoApagar = card.querySelector(".botao-apagar");
+
+        if (botaoApagar) {
+            botaoApagar.addEventListener("click", async function () {
+                const confirmar = confirm(
+                    '⚠️ Tem certeza que deseja apagar "' + conteudo.nome + '"?'
+                );
+
+                if (!confirmar) return;
+
+                await apagarConteudo(conteudo.id);
+
+                if (
+                    detalhesAtual &&
+                    detalhesAtual.id === conteudo.id
+                ) {
+                    fecharDetalhes();
+                }
+
+                alert("🗑️ Conteúdo apagado.");
+                await carregarConteudos();
+            });
+        }
+
+        return card;
+    }
+
+    /* =========================================================
+       PLAYER
+       ========================================================= */
+
+    async function reproduzirFilme(conteudo) {
+        if (!videoPlayer) return;
+
+        const url = criarURL(conteudo.video, "video/mp4");
+
+        if (!url) {
+            alert("Este filme não possui um vídeo válido.");
+            return;
+        }
+
+        videoAtual = {
+            conteudo: conteudo,
+            episodio: null,
+            temporada: null
+        };
+
+        videoPlayer.pause();
+        videoPlayer.removeAttribute("src");
+        videoPlayer.load();
+        videoPlayer.src = url;
+
+        if (tituloPlayer) tituloPlayer.textContent = conteudo.nome;
+        if (descricaoPlayer) descricaoPlayer.textContent = conteudo.descricao;
+
+        if (modalPlayer) {
+            modalPlayer.style.display = "flex";
+            modalPlayer.classList.add("ativo");
+        }
+
+        videoPlayer.onloadedmetadata = async function () {
+            if (
+                Number(conteudo.progresso || 0) > 0 &&
+                Number(conteudo.progresso || 0) < 99 &&
+                Number.isFinite(videoPlayer.duration)
+            ) {
+                videoPlayer.currentTime =
+                    videoPlayer.duration * (Number(conteudo.progresso) / 100);
+            }
+
+            if (Number.isFinite(videoPlayer.duration)) {
+                conteudo.duracao = videoPlayer.duration;
+                await atualizarConteudo(conteudo);
+            }
+        };
+
+        conteudo.visualizacoes = Number(conteudo.visualizacoes || 0) + 1;
+        conteudo.ultimoAcesso = Date.now();
+
+        await atualizarConteudo(conteudo);
+        atualizarDetalhesSeAberto(conteudo);
+    }
+
+    async function reproduzirEpisodio(serie, temporada, episodio) {
+        if (!videoPlayer) return;
+
+        const url = criarURL(episodio.video, "video/mp4");
+
+        if (!url) {
+            alert("Este episódio não possui um vídeo válido.");
+            return;
+        }
+
+        videoAtual = {
+            conteudo: serie,
+            episodio: episodio,
+            temporada: temporada
+        };
+
+        videoPlayer.pause();
+        videoPlayer.removeAttribute("src");
+        videoPlayer.load();
+        videoPlayer.src = url;
+
+        if (tituloPlayer) {
+            tituloPlayer.textContent =
+                serie.nome +
+                " — T" +
+                temporada.numero +
+                " E" +
+                episodio.numero;
+        }
+
+        if (descricaoPlayer) {
+            descricaoPlayer.textContent = episodio.nome || "";
+        }
+
+        if (modalPlayer) {
+            modalPlayer.style.display = "flex";
+            modalPlayer.classList.add("ativo");
+        }
+
+        videoPlayer.onloadedmetadata = function () {
+            if (
+                Number(episodio.progresso || 0) > 0 &&
+                Number(episodio.progresso || 0) < 99 &&
+                Number.isFinite(videoPlayer.duration)
+            ) {
+                videoPlayer.currentTime =
+                    videoPlayer.duration * (Number(episodio.progresso) / 100);
+            }
+        };
+
+        episodio.visualizacoes = Number(episodio.visualizacoes || 0) + 1;
+        episodio.ultimoAcesso = Date.now();
+
+        await atualizarConteudo(serie);
+    }
+
+    if (videoPlayer) {
+        videoPlayer.addEventListener("timeupdate", async function () {
+            if (!videoAtual) return;
+            if (!videoPlayer.duration || !Number.isFinite(videoPlayer.duration)) return;
+
+            const progresso =
+                (videoPlayer.currentTime / videoPlayer.duration) * 100;
+
+            if (videoAtual.episodio) {
+                videoAtual.episodio.progresso = progresso;
+            } else {
+                videoAtual.conteudo.progresso = progresso;
+            }
+
+            if (Math.floor(progresso) % 5 === 0) {
+                try {
+                    await atualizarConteudo(videoAtual.conteudo);
+                } catch (erro) {
+                    console.warn("Progresso:", erro);
+                }
+            }
+        });
+
+        videoPlayer.addEventListener("ended", async function () {
+            if (!videoAtual) return;
+
+            if (videoAtual.episodio) {
+                videoAtual.episodio.progresso = 100;
+            } else {
+                videoAtual.conteudo.progresso = 100;
+            }
+
+            try {
+                await atualizarConteudo(videoAtual.conteudo);
+                await carregarConteudos();
+            } catch (erro) {
+                console.warn("Finalização:", erro);
+            }
+        });
+    }
+
+    function fecharVideo() {
+        if (videoPlayer) {
+            try {
+                videoPlayer.pause();
+                videoPlayer.removeAttribute("src");
+                videoPlayer.load();
+            } catch (erro) {}
+        }
+
+        if (modalPlayer) {
+            modalPlayer.style.display = "none";
+            modalPlayer.classList.remove("ativo");
+        }
+
+        videoAtual = null;
+    }
+
+    if (fecharPlayer) fecharPlayer.addEventListener("click", fecharVideo);
+
+    if (modalPlayer) {
+        modalPlayer.addEventListener("click", function (evento) {
+            if (evento.target === modalPlayer) {
+                fecharVideo();
+            }
+        });
+    }
+
+    /* =========================================================
+       ATUALIZAR DETALHES SE ESTIVER ABERTO
+       ========================================================= */
+
+    function atualizarDetalhesSeAberto(conteudo) {
+        const modal = document.getElementById("imaModalDetalhes");
+
+        if (
+            modal &&
+            modal.classList.contains("ativo") &&
+            detalhesAtual &&
+            detalhesAtual.id === conteudo.id
+        ) {
+            abrirDetalhes(conteudo);
+        }
+    }
+
+    /* =========================================================
+       DOWNLOAD
+       ========================================================= */
+
+    function baixarVideo(valor, nome) {
+        const blob = converterParaBlob(valor, "video/mp4");
+
+        if (!blob) {
+            alert("Este conteúdo não possui vídeo disponível para baixar.");
+            return;
+        }
+                }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = String(nome || "video").replace(/[\\/:*?"<>|]/g, "_") + ".mp4";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(function () {
+            try { URL.revokeObjectURL(url); } catch (erro) {}
+        }, 1000);
+    }
+
+    /* =========================================================
+       PARTILHAR
+       ========================================================= */
+
+    function partilhar(conteudo) {
+        const texto =
+            "🎬 " + conteudo.nome +
+            "\n\n" +
+            (conteudo.descricao || "") +
+            "\n\n" +
+            "📺 I.M.A FILMES";
+
+        if (navigator.share) {
+            navigator.share({
+                title: conteudo.nome,
+                text: texto
+            }).catch(function () {});
+            return;
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(texto)
+                .then(function () {
+                    alert("🔗 Informação copiada!");
+                })
+                .catch(function () {
+                    alert(texto);
+                });
+            return;
+        }
+
+        alert(texto);
+    }
+
+    /* =========================================================
+       PESQUISA
+       ========================================================= */
+
+    if (campoPesquisa) {
+        campoPesquisa.addEventListener("input", function () {
+            carregarConteudos();
+        });
+    }
+
+    /* =========================================================
+       MENU LATERAL
+       ========================================================= */
+
+    function configurarMenu() {
+        const botoes = document.querySelectorAll(".menu > button");
+
+        botoes.forEach(function (botao) {
+            botao.addEventListener("click", async function () {
+                const texto = botao.textContent.toLowerCase();
+
+                if (texto.includes("início")) {
+                    filtroAtual = "todos";
+                } else if (texto.includes("filmes")) {
+                    filtroAtual = "filmes";
+                } else if (texto.includes("séries")) {
+                    filtroAtual = "series";
+                } else if (texto.includes("favoritos")) {
+                    filtroAtual = "favoritos";
+                } else if (texto.includes("biblioteca")) {
+                    filtroAtual = "todos";
+                } else if (texto.includes("vendas")) {
+                    filtroAtual = "vendas";
+                } else {
+                    return;
+                }
+
+                botoes.forEach(function (b) {
+                    b.classList.remove("menu-ativo");
+                });
+
+                botao.classList.add("menu-ativo");
+
+                await carregarConteudos();
+            });
+        });
+    }
+
+    /* =========================================================
+       FECHAR MODAIS / ESC
+       ========================================================= */
+
+    document.addEventListener("keydown", function (evento) {
+        if (evento.key !== "Escape") return;
+
+        fecharPublicacao();
+        fecharVideo();
+        fecharDetalhes();
+    });
+
+    if (modalPublicacao) {
+        modalPublicacao.addEventListener("click", function (evento) {
+            if (evento.target === modalPublicacao) {
+                fecharPublicacao();
+            }
+        });
+    }
+
+    /* =========================================================
+       INICIALIZAÇÃO
+       ========================================================= */
+
+    async function iniciarAplicacao() {
+        try {
+            instalarEstiloDetalhes();
+            criarModalDetalhes();
+
+            await abrirBanco();
+
+            atualizarTipoConteudo();
+            atualizarPreco();
+            configurarMenu();
+
+            await carregarConteudos();
+
+            console.log("====================================");
+            console.log("✅ I.M.A FILMES carregado.");
+            console.log("🗄️ Banco preservado:", DB_NAME);
+            console.log("🎬 Modal profissional de detalhes ativo.");
+            console.log("====================================");
+
+        } catch (erro) {
+            console.error("Erro ao iniciar I.M.A FILMES:", erro);
+
+            if (listaFilmes) {
+                listaFilmes.innerHTML =
+                    `<div style="padding:30px;text-align:center;">
+                        <h2>⚠️ Erro ao carregar a biblioteca</h2>
+                        <p>Abra o Console (F12) para ver o erro.</p>
+                    </div>`;
+            }
+        }
+    }
+
+    iniciarAplicacao();
+});
