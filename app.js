@@ -87,7 +87,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (!store.indexNames.contains("tipo")) {
                         store.createIndex("tipo", "tipo", { unique: false });
                     }
-
                     if (!store.indexNames.contains("dataPublicacao")) {
                         store.createIndex("dataPublicacao", "dataPublicacao", { unique: false });
                     }
@@ -107,10 +106,7 @@ document.addEventListener("DOMContentLoaded", function () {
             };
 
             pedido.onerror = function () {
-                reject(
-                    pedido.error ||
-                    new Error("Não foi possível abrir o IndexedDB.")
-                );
+                reject(pedido.error || new Error("Não foi possível abrir o IndexedDB."));
             };
 
             pedido.onblocked = function () {
@@ -152,11 +148,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const pedido = store.getAll();
 
                 pedido.onsuccess = function () {
-                    resolve(
-                        Array.isArray(pedido.result)
-                            ? pedido.result
-                            : []
-                    );
+                    resolve(Array.isArray(pedido.result) ? pedido.result : []);
                 };
 
                 pedido.onerror = function () {
@@ -215,10 +207,7 @@ document.addEventListener("DOMContentLoaded", function () {
        ========================================================= */
 
     function gerarId() {
-        return (
-            Date.now().toString(36) +
-            Math.random().toString(36).slice(2, 10)
-        );
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
     }
 
     function escaparTexto(texto) {
@@ -232,14 +221,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function formatarData(data) {
         if (!data) return "";
-
         try {
             const d = new Date(data);
-
-            if (Number.isNaN(d.getTime())) {
-                return "";
-            }
-
+            if (Number.isNaN(d.getTime())) return "";
             return d.toLocaleDateString("pt-AO");
         } catch (erro) {
             return "";
@@ -247,77 +231,41 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function formatarTempo(segundos) {
-        segundos = Math.max(
-            0,
-            Number(segundos) || 0
-        );
-
+        segundos = Math.max(0, Number(segundos) || 0);
         const horas = Math.floor(segundos / 3600);
         const minutos = Math.floor((segundos % 3600) / 60);
         const seg = Math.floor(segundos % 60);
 
         if (horas > 0) {
-            return (
-                horas +
-                ":" +
-                String(minutos).padStart(2, "0") +
-                ":" +
-                String(seg).padStart(2, "0")
-            );
+            return horas + ":" +
+                String(minutos).padStart(2, "0") + ":" +
+                String(seg).padStart(2, "0");
         }
 
-        return (
-            minutos +
-            ":" +
-            String(seg).padStart(2, "0")
-        );
+        return minutos + ":" + String(seg).padStart(2, "0");
     }
 
     function converterParaBlob(valor, mimePadrao) {
         if (!valor) return null;
 
-        if (valor instanceof Blob) {
-            return valor;
-        }
+        if (valor instanceof Blob) return valor;
 
         if (valor instanceof ArrayBuffer) {
-            return new Blob(
-                [valor],
-                {
-                    type:
-                        mimePadrao ||
-                        "application/octet-stream"
-                }
-            );
+            return new Blob([valor], { type: mimePadrao || "application/octet-stream" });
         }
 
         if (ArrayBuffer.isView(valor)) {
-            return new Blob(
-                [valor.buffer],
-                {
-                    type:
-                        mimePadrao ||
-                        "application/octet-stream"
-                }
-            );
+            return new Blob([valor.buffer], { type: mimePadrao || "application/octet-stream" });
         }
 
         if (typeof valor === "object") {
             if (valor.data) {
-                const b = converterParaBlob(
-                    valor.data,
-                    valor.type || mimePadrao
-                );
-
+                const b = converterParaBlob(valor.data, valor.type || mimePadrao);
                 if (b) return b;
             }
 
             if (valor.buffer) {
-                const b = converterParaBlob(
-                    valor.buffer,
-                    valor.type || mimePadrao
-                );
-
+                const b = converterParaBlob(valor.buffer, valor.type || mimePadrao);
                 if (b) return b;
             }
         }
@@ -328,38 +276,19 @@ document.addEventListener("DOMContentLoaded", function () {
     function dataUrlParaBlob(dataUrl) {
         try {
             const partes = String(dataUrl).split(",");
-
-            if (partes.length < 2) {
-                return null;
-            }
+            if (partes.length < 2) return null;
 
             const cabecalho = partes[0];
             const dados = partes.slice(1).join(",");
-
-            const mime =
-                (cabecalho.match(/data:([^;]+)/) || [])[1] ||
-                "application/octet-stream";
-
+            const mime = (cabecalho.match(/data:([^;]+)/) || [])[1] || "application/octet-stream";
             const binario = atob(dados);
+            const bytes = new Uint8Array(binario.length);
 
-            const bytes =
-                new Uint8Array(binario.length);
-
-            for (
-                let i = 0;
-                i < binario.length;
-                i++
-            ) {
-                bytes[i] =
-                    binario.charCodeAt(i);
+            for (let i = 0; i < binario.length; i++) {
+                bytes[i] = binario.charCodeAt(i);
             }
 
-            return new Blob(
-                [bytes],
-                {
-                    type: mime
-                }
-            );
+            return new Blob([bytes], { type: mime });
         } catch (erro) {
             return null;
         }
@@ -382,28 +311,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 return "";
             }
 
-            const blob =
-                converterParaBlob(
-                    valor,
-                    mimePadrao
-                );
+            const blob = converterParaBlob(valor, mimePadrao);
 
             if (!blob) return "";
 
-            const url =
-                URL.createObjectURL(blob);
-
-            if (url) {
-                objectUrls.push(url);
-            }
-
+            const url = URL.createObjectURL(blob);
+            if (url) objectUrls.push(url);
             return url;
         } catch (erro) {
-            console.warn(
-                "URL inválida ignorada:",
-                erro
-            );
-
+            console.warn("URL inválida ignorada:", erro);
             return "";
         }
     }
@@ -411,9 +327,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function limparURLs() {
         objectUrls.forEach(function (url) {
             try {
-                if (
-                    String(url).startsWith("blob:")
-                ) {
+                if (String(url).startsWith("blob:")) {
                     URL.revokeObjectURL(url);
                 }
             } catch (erro) {}
@@ -423,152 +337,51 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function normalizarConteudo(c) {
-        if (
-            !c ||
-            typeof c !== "object"
-        ) {
-            return null;
-        }
+        if (!c || typeof c !== "object") return null;
 
         return {
             ...c,
-
-            id:
-                c.id ||
-                gerarId(),
-
-            tipo:
-                c.tipo === "serie"
-                    ? "serie"
-                    : "filme",
-
-            nome:
-                c.nome ||
-                c.titulo ||
-                "Sem título",
-
-            descricao:
-                c.descricao ||
-                "",
-
-            ano:
-                c.ano ||
-                "",
-
-            acesso:
-                c.acesso ||
-                c.tipoAcesso ||
-                "gratis",
-
-            preco:
-                Number(c.preco || 0),
-
-            favorito:
-                c.favorito === true,
-
-            visualizacoes:
-                Number(
-                    c.visualizacoes ||
-                    c.views ||
-                    0
-                ),
-
-            progresso:
-                Number(
-                    c.progresso ||
-                    0
-                ),
-
-            duracao:
-                Number(
-                    c.duracao ||
-                    0
-                ),
-
-            temporadas:
-                Array.isArray(c.temporadas)
-                    ? c.temporadas
-                    : []
+            id: c.id || gerarId(),
+            tipo: c.tipo === "serie" ? "serie" : "filme",
+            nome: c.nome || c.titulo || "Sem título",
+            descricao: c.descricao || "",
+            ano: c.ano || "",
+            acesso: c.acesso || c.tipoAcesso || "gratis",
+            preco: Number(c.preco || 0),
+            favorito: c.favorito === true,
+            visualizacoes: Number(c.visualizacoes || c.views || 0),
+            progresso: Number(c.progresso || 0),
+            duracao: Number(c.duracao || 0),
+            temporadas: Array.isArray(c.temporadas) ? c.temporadas : []
         };
     }
 
     function textoAcesso(conteudo) {
-        if (
-            conteudo.acesso === "venda"
-        ) {
-            return (
-                "💰 Venda • " +
-                Number(
-                    conteudo.preco || 0
-                ).toLocaleString("pt-AO") +
-                " Kz"
-            );
+        if (conteudo.acesso === "venda") {
+            return "💰 Venda • " + Number(conteudo.preco || 0).toLocaleString("pt-AO") + " Kz";
         }
 
-        if (
-            conteudo.acesso === "aluguel"
-        ) {
-            return (
-                "🎟️ Aluguel • " +
-                Number(
-                    conteudo.preco || 0
-                ).toLocaleString("pt-AO") +
-                " Kz"
-            );
+        if (conteudo.acesso === "aluguel") {
+            return "🎟️ Aluguel • " + Number(conteudo.preco || 0).toLocaleString("pt-AO") + " Kz";
         }
 
         return "🆓 Gratuito";
     }
 
     function totalEpisodios(serie) {
-        return (
-            serie.temporadas || []
-        ).reduce(
-            function (
-                total,
-                temporada
-            ) {
-                return (
-                    total +
-                    (
-                        temporada &&
-                        Array.isArray(
-                            temporada.episodios
-                        )
-                            ? temporada.episodios.length
-                            : 0
-                    )
-                );
-            },
-            0
-        );
+        return (serie.temporadas || []).reduce(function (total, temporada) {
+            return total + ((temporada && Array.isArray(temporada.episodios)) ? temporada.episodios.length : 0);
+        }, 0);
     }
 
     function totalVisualizacoes(serie) {
-        let total =
-            Number(
-                serie.visualizacoes ||
-                0
-            );
+        let total = Number(serie.visualizacoes || 0);
 
-        (
-            serie.temporadas || []
-        ).forEach(
-            function (temporada) {
-                (
-                    temporada.episodios ||
-                    []
-                ).forEach(
-                    function (ep) {
-                        total +=
-                            Number(
-                                ep.visualizacoes ||
-                                0
-                            );
-                    }
-                );
-            }
-        );
+        (serie.temporadas || []).forEach(function (temporada) {
+            (temporada.episodios || []).forEach(function (ep) {
+                total += Number(ep.visualizacoes || 0);
+            });
+        });
 
         return total;
     }
@@ -578,21 +391,10 @@ document.addEventListener("DOMContentLoaded", function () {
        ========================================================= */
 
     function instalarEstiloDetalhes() {
-        if (
-            document.getElementById(
-                "ima-detalhes-style"
-            )
-        ) {
-            return;
-        }
+        if (document.getElementById("ima-detalhes-style")) return;
 
-        const style =
-            document.createElement(
-                "style"
-            );
-
-        style.id =
-            "ima-detalhes-style";
+        const style = document.createElement("style");
+        style.id = "ima-detalhes-style";
 
         style.textContent = `
             #imaModalDetalhes {
@@ -835,21 +637,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function criarModalDetalhes() {
-        if (
-            document.getElementById(
-                "imaModalDetalhes"
-            )
-        ) {
-            return;
-        }
+        if (document.getElementById("imaModalDetalhes")) return;
 
-        const modal =
-            document.createElement(
-                "div"
-            );
-
-        modal.id =
-            "imaModalDetalhes";
+        const modal = document.createElement("div");
+        modal.id = "imaModalDetalhes";
 
         modal.innerHTML = `
             <div class="ima-detalhes-caixa" role="dialog" aria-modal="true">
@@ -858,43 +649,18 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
         `;
 
-        document.body.appendChild(
-            modal
-        );
+        document.body.appendChild(modal);
 
-        modal.addEventListener(
-            "click",
-            function (evento) {
-                if (
-                    evento.target === modal
-                ) {
-                    fecharDetalhes();
-                }
-            }
-        );
+        modal.addEventListener("click", function (evento) {
+            if (evento.target === modal) fecharDetalhes();
+        });
 
-        document
-            .getElementById(
-                "imaFecharDetalhes"
-            )
-            .addEventListener(
-                "click",
-                fecharDetalhes
-            );
+        document.getElementById("imaFecharDetalhes").addEventListener("click", fecharDetalhes);
     }
 
     function fecharDetalhes() {
-        const modal =
-            document.getElementById(
-                "imaModalDetalhes"
-            );
-
-        if (modal) {
-            modal.classList.remove(
-                "ativo"
-            );
-        }
-
+        const modal = document.getElementById("imaModalDetalhes");
+        if (modal) modal.classList.remove("ativo");
         detalhesAtual = null;
     }
 
@@ -902,54 +668,27 @@ document.addEventListener("DOMContentLoaded", function () {
        MODAL DE DETALHES
        ========================================================= */
 
-    async function abrirDetalhes(
-        conteudo
-    ) {
-        conteudo =
-            normalizarConteudo(
-                conteudo
-            );
-
+    async function abrirDetalhes(conteudo) {
+        conteudo = normalizarConteudo(conteudo);
         if (!conteudo) return;
 
-        detalhesAtual =
-            conteudo;
-
+        detalhesAtual = conteudo;
         criarModalDetalhes();
 
-        const modal =
-            document.getElementById(
-                "imaModalDetalhes"
-            );
+        const modal = document.getElementById("imaModalDetalhes");
+        const area = document.getElementById("imaDetalhesConteudo");
 
-        const area =
-            document.getElementById(
-                "imaDetalhesConteudo"
-            );
-
-        const capaURL =
-            criarURL(
-                conteudo.capa,
-                "image/jpeg"
-            );
-
-        const tipoTexto =
-            conteudo.tipo === "serie"
-                ? "📺 Série"
-                : "🎬 Filme";
-
-        const visualizacoes =
-            totalVisualizacoes(
-                conteudo
-            );
+        const capaURL = criarURL(conteudo.capa, "image/jpeg");
+        const tipoTexto = conteudo.tipo === "serie" ? "📺 Série" : "🎬 Filme";
+        const visualizacoes = totalVisualizacoes(conteudo);
 
         let html = `
             <div class="ima-detalhes-hero">
                 <div class="ima-detalhes-capa">
                     ${
                         capaURL
-                            ? `<img src="${capaURL}" alt="${escaparTexto(conteudo.nome)}">`
-                            : `<div style="height:100%;display:flex;align-items:center;justify-content:center;font-size:70px;">🎬</div>`
+                        ? `<img src="${capaURL}" alt="${escaparTexto(conteudo.nome)}">`
+                        : `<div style="height:100%;display:flex;align-items:center;justify-content:center;font-size:70px;">🎬</div>`
                     }
                 </div>
 
@@ -958,11 +697,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     <div class="ima-detalhes-meta">
                         <span class="ima-detalhes-badge">${tipoTexto}</span>
-                        ${
-                            conteudo.ano
-                                ? `<span class="ima-detalhes-badge">📅 ${escaparTexto(conteudo.ano)}</span>`
-                                : ""
-                        }
+                        ${conteudo.ano ? `<span class="ima-detalhes-badge">📅 ${escaparTexto(conteudo.ano)}</span>` : ""}
                         <span class="ima-detalhes-badge">👁️ ${visualizacoes} visualizações</span>
                         <span class="ima-detalhes-badge">${escaparTexto(textoAcesso(conteudo))}</span>
                     </div>
@@ -986,22 +721,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         ${
                             conteudo.tipo === "filme"
-                                ? `<button class="ima-detalhes-btn" id="imaDetalhesBaixar">⬇️ Baixar</button>`
-                                : ""
+                            ? `<button class="ima-detalhes-btn" id="imaDetalhesBaixar">⬇️ Baixar</button>`
+                            : ""
                         }
                     </div>
 
                     ${
                         Number(conteudo.progresso || 0) > 0
-                            ? `
-                                <div class="ima-detalhes-progresso">
-                                    <div>▶️ Continuar assistindo — ${Math.round(conteudo.progresso)}%</div>
-                                    <div class="ima-detalhes-barra">
-                                        <span style="width:${Math.min(100, Math.max(0, conteudo.progresso))}%"></span>
-                                    </div>
+                        ? `
+                            <div class="ima-detalhes-progresso">
+                                <div>▶️ Continuar assistindo — ${Math.round(conteudo.progresso)}%</div>
+                                <div class="ima-detalhes-barra">
+                                    <span style="width:${Math.min(100, Math.max(0, conteudo.progresso))}%"></span>
                                 </div>
-                            `
-                            : ""
+                            </div>
+                        `
+                        : ""
                     }
                 </div>
             </div>
@@ -1009,9 +744,7 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="ima-detalhes-corpo">
         `;
 
-        if (
-            conteudo.tipo === "filme"
-        ) {
+        if (conteudo.tipo === "filme") {
             html += `
                 <div class="ima-detalhes-secao">
                     <h2>🎬 Sobre este filme</h2>
@@ -1030,274 +763,1195 @@ document.addEventListener("DOMContentLoaded", function () {
                     </p>
             `;
 
-            if (
-                !conteudo.temporadas ||
-                conteudo.temporadas.length === 0
-            ) {
-                html +=
-                    `<p>Esta série ainda não possui episódios.</p>`;
+            if (!conteudo.temporadas || conteudo.temporadas.length === 0) {
+                html += `<p>Esta série ainda não possui episódios.</p>`;
             } else {
-                conteudo.temporadas.forEach(
-                    function (temporada) {
+                conteudo.temporadas.forEach(function (temporada) {
+                    html += `
+                        <div class="ima-temporada">
+                            <div class="ima-temporada-titulo">
+                                📚 Temporada ${escaparTexto(temporada.numero || "")}
+                            </div>
+                    `;
+
+                    (temporada.episodios || []).forEach(function (episodio) {
+                        const progresso = Number(episodio.progresso || 0);
+
                         html += `
-                            <div class="ima-temporada">
-                                <div class="ima-temporada-titulo">
-                                    📚 Temporada ${escaparTexto(temporada.numero || "")}
+                            <div class="ima-episodio">
+                                <div>
+                                    <span class="ima-episodio-nome">
+                                        Episódio ${escaparTexto(episodio.numero || "")} — ${escaparTexto(episodio.nome || "Episódio")}
+                                    </span>
+                                    <span class="ima-episodio-sub">
+                                        👁️ ${Number(episodio.visualizacoes || 0)} visualizações
+                                        ${progresso > 0 ? " • " + Math.round(progresso) + "% assistido" : ""}
+                                    </span>
                                 </div>
+                                <button
+                                    class="ima-episodio-play"
+                                    data-temporada="${escaparTexto(temporada.numero)}"
+                                    data-episodio="${escaparTexto(episodio.numero)}"
+                                >
+                                    ▶️ Assistir
+                                </button>
+                            </div>
                         `;
+                    });
 
-                        (
-                            temporada.episodios ||
-                            []
-                        ).forEach(
-                            function (episodio) {
-                                const progresso =
-                                    Number(
-                                        episodio.progresso ||
-                                        0
-                                    );
-
-                                html += `
-                                    <div class="ima-episodio">
-                                        <div>
-                                            <span class="ima-episodio-nome">
-                                                Episódio ${escaparTexto(episodio.numero || "")} — ${escaparTexto(episodio.nome || "Episódio")}
-                                            </span>
-                                            <span class="ima-episodio-sub">
-                                                👁️ ${Number(episodio.visualizacoes || 0)} visualizações
-                                                ${
-                                                    progresso > 0
-                                                        ? " • " + Math.round(progresso) + "% assistido"
-                                                        : ""
-                                                }
-                                            </span>
-                                        </div>
-
-                                        <button
-                                            class="ima-episodio-play"
-                                            data-temporada="${escaparTexto(temporada.numero)}"
-                                            data-episodio="${escaparTexto(episodio.numero)}"
-                                        >
-                                            ▶️ Assistir
-                                        </button>
-                                    </div>
-                                `;
-                            }
-                        );
-
-                        html += `</div>`;
-                    }
-                );
+                    html += `</div>`;
+                });
             }
 
             html += `</div>`;
         }
 
         html += `</div>`;
-
         area.innerHTML = html;
-
         modal.classList.add("ativo");
 
-        const btnAssistir =
-            document.getElementById(
-                "imaDetalhesAssistir"
-            );
-
-        const btnFavorito =
-            document.getElementById(
-                "imaDetalhesFavorito"
-            );
-
-        const btnCompartilhar =
-            document.getElementById(
-                "imaDetalhesCompartilhar"
-            );
-
-        const btnBaixar =
-            document.getElementById(
-                "imaDetalhesBaixar"
-            );
+        const btnAssistir = document.getElementById("imaDetalhesAssistir");
+        const btnFavorito = document.getElementById("imaDetalhesFavorito");
+        const btnCompartilhar = document.getElementById("imaDetalhesCompartilhar");
+        const btnBaixar = document.getElementById("imaDetalhesBaixar");
 
         if (btnAssistir) {
-            btnAssistir.addEventListener(
-                "click",
-                function () {
-                    if (
-                        conteudo.tipo === "filme"
-                    ) {
+            btnAssistir.addEventListener("click", function () {
+                if (conteudo.tipo === "filme") {
+                    fecharDetalhes();
+                    reproduzirFilme(conteudo);
+                } else {
+                    const primeiro = encontrarPrimeiroEpisodio(conteudo);
+                    if (primeiro) {
                         fecharDetalhes();
-                        reproduzirFilme(
-                            conteudo
-                        );
+                        reproduzirEpisodio(conteudo, primeiro.temporada, primeiro.episodio);
                     } else {
-                        const primeiro =
-                            encontrarPrimeiroEpisodio(
-                                conteudo
-                            );
-
-                        if (primeiro) {
-                            fecharDetalhes();
-
-                            reproduzirEpisodio(
-                                conteudo,
-                                primeiro.temporada,
-                                primeiro.episodio
-                            );
-                        } else {
-                            alert(
-                                "Esta série não possui episódios com vídeo."
-                            );
-                        }
+                        alert("Esta série não possui episódios com vídeo.");
                     }
                 }
-            );
+            });
         }
 
         if (btnFavorito) {
-            btnFavorito.addEventListener(
-                "click",
-                async function () {
-                    conteudo.favorito =
-                        !conteudo.favorito;
-
-                    await atualizarConteudo(
-                        conteudo
-                    );
-
-                    await abrirDetalhes(
-                        conteudo
-                    );
-
-                    await carregarConteudos();
-                }
-            );
+            btnFavorito.addEventListener("click", async function () {
+                conteudo.favorito = !conteudo.favorito;
+                await atualizarConteudo(conteudo);
+                await abrirDetalhes(conteudo);
+                await carregarConteudos();
+            });
         }
 
         if (btnCompartilhar) {
-            btnCompartilhar.addEventListener(
-                "click",
-                function () {
-                    partilhar(
-                        conteudo
-                    );
-                }
-            );
+            btnCompartilhar.addEventListener("click", function () {
+                partilhar(conteudo);
+            });
         }
 
         if (btnBaixar) {
-            btnBaixar.addEventListener(
-                "click",
-                function () {
-                    baixarVideo(
-                        conteudo.video,
-                        conteudo.nome
-                    );
-                }
-            );
+            btnBaixar.addEventListener("click", function () {
+                baixarVideo(conteudo.video, conteudo.nome);
+            });
         }
 
-        area
-            .querySelectorAll(
-                ".ima-episodio-play"
-            )
-            .forEach(
-                function (botao) {
-                    botao.addEventListener(
-                        "click",
-                        function () {
-                            const temporadaNumero =
-                                Number(
-                                    botao.dataset.temporada
-                                );
+        area.querySelectorAll(".ima-episodio-play").forEach(function (botao) {
+            botao.addEventListener("click", function () {
+                const temporadaNumero = Number(botao.dataset.temporada);
+                const episodioNumero = Number(botao.dataset.episodio);
 
-                            const episodioNumero =
-                                Number(
-                                    botao.dataset.episodio
-                                );
+                const temporada = (conteudo.temporadas || []).find(function (t) {
+                    return Number(t.numero) === temporadaNumero;
+                });
 
-                            const temporada =
-                                (
-                                    conteudo.temporadas ||
-                                    []
-                                ).find(
-                                    function (t) {
-                                        return (
-                                            Number(
-                                                t.numero
-                                            ) ===
-                                            temporadaNumero
-                                        );
-                                    }
-                                );
+                const episodio = temporada && (temporada.episodios || []).find(function (e) {
+                    return Number(e.numero) === episodioNumero;
+                });
 
-                            const episodio =
-                                temporada &&
-                                (
-                                    temporada.episodios ||
-                                    []
-                                ).find(
-                                    function (e) {
-                                        return (
-                                            Number(
-                                                e.numero
-                                            ) ===
-                                            episodioNumero
-                                        );
-                                    }
-                                );
-
-                            if (
-                                !temporada ||
-                                !episodio
-                            ) {
-                                alert(
-                                    "Episódio não encontrado."
-                                );
-                                return;
-                            }
-
-                            fecharDetalhes();
-
-                            reproduzirEpisodio(
-                                conteudo,
-                                temporada,
-                                episodio
-                            );
-                        }
-                    );
+                if (!temporada || !episodio) {
+                    alert("Episódio não encontrado.");
+                    return;
                 }
-            );
+
+                fecharDetalhes();
+                reproduzirEpisodio(conteudo, temporada, episodio);
+            });
+        });
     }
 
-    function encontrarPrimeiroEpisodio(
-        serie
-    ) {
-        for (
-            const temporada of (
-                serie.temporadas ||
-                []
-            )
-        ) {
-            for (
-                const episodio of (
-                    temporada.episodios ||
-                    []
-                )
-            ) {
-                if (
-                    episodio &&
-                    episodio.video
-                ) {
-                    return {
-                        temporada:
-                            temporada,
-                        episodio:
-                            episodio
-                    };
+    function encontrarPrimeiroEpisodio(serie) {
+        for (const temporada of (serie.temporadas || [])) {
+            for (const episodio of (temporada.episodios || [])) {
+                if (episodio && episodio.video) {
+                    return { temporada: temporada, episodio: episodio };
                 }
             }
         }
-
         return null;
     }
+
+    /* =========================================================
+       PUBLICAÇÃO
+       ========================================================= */
+
+    function abrirPublicacao() {
+        if (!modalPublicacao) return;
+        modalPublicacao.style.display = "flex";
+        modalPublicacao.classList.add("ativo");
+    }
+
+    function fecharPublicacao() {
+        if (!modalPublicacao) return;
+        modalPublicacao.style.display = "none";
+        modalPublicacao.classList.remove("ativo");
+    }
+
+    if (botaoEnviar) botaoEnviar.addEventListener("click", abrirPublicacao);
+    if (botaoEnviarMenu) botaoEnviarMenu.addEventListener("click", abrirPublicacao);
+    if (fecharModal) fecharModal.addEventListener("click", fecharPublicacao);
+    if (cancelarPublicacao) cancelarPublicacao.addEventListener("click", fecharPublicacao);
+
+    function atualizarTipoConteudo() {
+        const tipo = tipoConteudo ? tipoConteudo.value : "filme";
+
+        if (areaSerie) {
+            areaSerie.style.display = tipo === "serie" ? "block" : "none";
+        }
+
+        if (areaVideo) {
+            areaVideo.style.display = tipo === "filme" ? "block" : "none";
+        }
+    }
+
+    if (tipoConteudo) {
+        tipoConteudo.addEventListener("change", atualizarTipoConteudo);
+    }
+
+    function atualizarPreco() {
+        if (!tipoAcesso || !areaPreco) return;
+
+        const pago = tipoAcesso.value === "venda" || tipoAcesso.value === "aluguel";
+        areaPreco.style.display = pago ? "block" : "none";
+
+        if (!pago && precoConteudo) precoConteudo.value = "";
+    }
+
+    if (tipoAcesso) {
+        tipoAcesso.addEventListener("change", atualizarPreco);
+    }
+
+    /* =========================================================
+       CAPA MANUAL
+       ========================================================= */
+
+    if (arquivoCapa) {
+        arquivoCapa.addEventListener("change", function () {
+            const arquivo = arquivoCapa.files && arquivoCapa.files[0];
+            if (!arquivo) return;
+
+            if (!arquivo.type.startsWith("image/")) {
+                alert("Escolha uma imagem válida.");
+                arquivoCapa.value = "";
+                return;
+            }
+
+            arquivoCapa._capaAutomatica = null;
+
+            const url = URL.createObjectURL(arquivo);
+
+            if (previewCapa) {
+                previewCapa.innerHTML =
+                    `<img src="${url}" alt="Capa" style="width:100%;height:100%;object-fit:cover;">`;
+            }
+        });
+    }
+
+    /* =========================================================
+       CAPA AUTOMÁTICA
+       ========================================================= */
+
+    function gerarCapaDoVideo(arquivo, porcentagem) {
+        return new Promise(function (resolve, reject) {
+            if (!(arquivo instanceof Blob)) {
+                reject(new Error("Vídeo inválido."));
+                return;
+            }
+
+            const video = document.createElement("video");
+            const url = URL.createObjectURL(arquivo);
+
+            video.preload = "metadata";
+            video.muted = true;
+            video.playsInline = true;
+            video.src = url;
+
+            let finalizado = false;
+
+            function limpar() {
+                try { URL.revokeObjectURL(url); } catch (erro) {}
+            }
+
+            function erro(mensagem) {
+                if (finalizado) return;
+                finalizado = true;
+                limpar();
+                reject(new Error(mensagem));
+            }
+
+            video.onloadedmetadata = function () {
+                let tempo = Number(video.duration) * Number(porcentagem || 0.2);
+
+                if (!Number.isFinite(tempo)) tempo = 0;
+
+                tempo = Math.max(0, Math.min(tempo, Math.max(0, video.duration - 0.1)));
+
+                try {
+                    video.currentTime = tempo;
+                } catch (e) {
+                    erro("Não foi possível posicionar o vídeo.");
+                }
+            };
+
+            video.onseeked = function () {
+                if (finalizado) return;
+
+                try {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = video.videoWidth || 640;
+                    canvas.height = video.videoHeight || 360;
+
+                    const contexto = canvas.getContext("2d");
+
+                    if (!contexto) {
+                        erro("Canvas indisponível.");
+                        return;
+                    }
+
+                    contexto.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    canvas.toBlob(function (blob) {
+                        if (finalizado) return;
+
+                        if (!blob) {
+                            erro("Não foi possível gerar a capa.");
+                            return;
+                        }
+
+                        finalizado = true;
+                        limpar();
+                        resolve(blob);
+                    }, "image/jpeg", 0.88);
+                } catch (e) {
+                    erro("Erro ao gerar a imagem da capa.");
+                }
+            };
+
+            video.onerror = function () {
+                erro("Erro ao ler o vídeo.");
+            };
+        });
+    }
+
+    async function gerarCapasAutomaticas(arquivo) {
+        if (!arquivo) return [];
+
+        const porcentagens = [0.05, 0.20, 0.40, 0.60, 0.80];
+        const capas = [];
+
+        for (const porcentagem of porcentagens) {
+            try {
+                const blob = await gerarCapaDoVideo(arquivo, porcentagem);
+                capas.push({ blob: blob, tempo: porcentagem });
+            } catch (erro) {
+                console.warn("Capa automática:", erro);
+            }
+        }
+
+        return capas;
+    }
+
+    function mostrarCapasAutomaticas(capas) {
+        if (!previewCapa || !capas.length) return;
+
+        let html = `
+            <div style="width:100%;">
+                <strong>🤖 Escolha uma capa automática</strong>
+                <div style="display:flex;gap:8px;overflow-x:auto;margin-top:10px;">
+        `;
+
+        capas.forEach(function (capa, indice) {
+            const url = URL.createObjectURL(capa.blob);
+            objectUrls.push(url);
+
+            html += `
+                <button type="button"
+                    class="capa-automatica"
+                    data-indice="${indice}"
+                    style="padding:2px;border:2px solid transparent;background:none;cursor:pointer;flex:0 0 auto;">
+                    <img src="${url}"
+                        style="width:95px;height:135px;object-fit:cover;border-radius:6px;"
+                        alt="Capa ${indice + 1}">
+                </button>
+            `;
+        });
+
+        html += `</div></div>`;
+        previewCapa.innerHTML = html;
+
+        const botoes = previewCapa.querySelectorAll(".capa-automatica");
+
+        botoes.forEach(function (botao) {
+            botao.addEventListener("click", function () {
+                botoes.forEach(function (b) {
+                    b.style.border = "2px solid transparent";
+                });
+
+                botao.style.border = "2px solid #00ff88";
+
+                const indice = Number(botao.dataset.indice);
+                arquivoCapa._capaAutomatica = capas[indice].blob;
+            });
+        });
+
+        if (botoes[0]) botoes[0].click();
+    }
+
+    if (arquivoVideo) {
+        arquivoVideo.addEventListener("change", async function () {
+            const arquivo = arquivoVideo.files && arquivoVideo.files[0];
+            if (!arquivo) return;
+
+            if (!arquivo.type.startsWith("video/")) {
+                alert("Escolha um vídeo válido.");
+                arquivoVideo.value = "";
+                return;
+            }
+
+            if (previewCapa) {
+                previewCapa.innerHTML = "🤖 Gerando capas automaticamente...";
+            }
+
+            const capas = await gerarCapasAutomaticas(arquivo);
+
+            if (capas.length) {
+                mostrarCapasAutomaticas(capas);
+            } else if (previewCapa) {
+                previewCapa.innerHTML = "Não foi possível gerar a capa automática.";
+            }
+        });
+    }
+
+    /* =========================================================
+       TEMPORADAS E EPISÓDIOS
+       ========================================================= */
+
+    function criarCamposTemporadas() {
+        if (!listaTemporadas || !quantidadeTemporadas) return;
+
+        const quantidade = Number(quantidadeTemporadas.value);
+        const quantidadeEp = Math.max(1, Number(quantidadeEpisodios ? quantidadeEpisodios.value : 1) || 1);
+
+        listaTemporadas.innerHTML = "";
+
+        if (!quantidade || quantidade < 1) return;
+
+        for (let temporada = 1; temporada <= quantidade; temporada++) {
+            const bloco = document.createElement("div");
+            bloco.className = "temporada-bloco";
+            bloco.style.marginTop = "15px";
+            bloco.style.padding = "12px";
+            bloco.style.border = "1px solid rgba(255,255,255,.15)";
+            bloco.style.borderRadius = "10px";
+
+            bloco.innerHTML =
+                `<h4>📺 Temporada ${temporada}</h4>
+                 <div class="episodios-temporada"></div>`;
+
+            const area = bloco.querySelector(".episodios-temporada");
+
+            for (let episodio = 1; episodio <= quantidadeEp; episodio++) {
+                const grupo = document.createElement("div");
+                grupo.style.marginTop = "10px";
+
+                grupo.innerHTML =
+                    `<label>🎞️ Episódio ${episodio}</label>
+                     <input type="text" class="nome-episodio" placeholder="Nome do episódio">
+                     <input type="file" class="arquivo-episodio" accept="video/*">`;
+
+                area.appendChild(grupo);
+            }
+
+            listaTemporadas.appendChild(bloco);
+        }
+    }
+
+    if (quantidadeTemporadas) quantidadeTemporadas.addEventListener("input", criarCamposTemporadas);
+    if (quantidadeEpisodios) quantidadeEpisodios.addEventListener("input", criarCamposTemporadas);
+
+    /* =========================================================
+       PUBLICAR
+       ========================================================= */
+
+    if (salvarPublicacao) {
+        salvarPublicacao.addEventListener("click", async function () {
+            try {
+                const nome = nomeConteudo ? nomeConteudo.value.trim() : "";
+                const descricao = descricaoConteudo ? descricaoConteudo.value.trim() : "";
+                const ano = anoConteudo ? anoConteudo.value : "";
+                const tipo = tipoConteudo ? tipoConteudo.value : "filme";
+                const acesso = tipoAcesso ? tipoAcesso.value : "gratis";
+                const preco = precoConteudo ? precoConteudo.value : "";
+
+                const capaArquivo = arquivoCapa && arquivoCapa.files[0]
+                    ? arquivoCapa.files[0]
+                    : null;
+
+                const videoArquivo = arquivoVideo && arquivoVideo.files[0]
+                    ? arquivoVideo.files[0]
+                    : null;
+
+                if (!nome) {
+                    alert("Digite o nome do conteúdo.");
+                    if (nomeConteudo) nomeConteudo.focus();
+                    return;
+                }
+
+                if (!descricao) {
+                    alert("Digite uma descrição.");
+                    if (descricaoConteudo) descricaoConteudo.focus();
+                    return;
+                }
+
+                if (!ano) {
+                    alert("Digite o ano.");
+                    if (anoConteudo) anoConteudo.focus();
+                    return;
+                }
+
+                if (tipo === "filme" && !videoArquivo) {
+                    alert("Escolha o vídeo do filme.");
+                    return;
+                }
+
+                if (!aceitarRegras || !aceitarRegras.checked) {
+                    alert("Você precisa aceitar as regras do I.M.A Filmes.");
+                    return;
+                }
+
+                if (
+                    (acesso === "venda" || acesso === "aluguel") &&
+                    (!preco || Number(preco) <= 0)
+                ) {
+                    alert("Digite um preço válido.");
+                    return;
+                }
+
+                let capaBlob = null;
+
+                if (capaArquivo) {
+                    capaBlob = capaArquivo;
+                } else if (arquivoCapa && arquivoCapa._capaAutomatica) {
+                    capaBlob = arquivoCapa._capaAutomatica;
+                } else if (tipo === "filme" && videoArquivo) {
+                    try {
+                        capaBlob = await gerarCapaDoVideo(videoArquivo, 0.20);
+                    } catch (erro) {
+                        console.warn("Capa automática falhou:", erro);
+                    }
+                }
+
+                if (!capaBlob) {
+                    alert("Escolha uma capa ou selecione uma capa automática.");
+                    return;
+                }
+
+                if (tipo === "filme") {
+                    const conteudo = {
+                        id: gerarId(),
+                        tipo: "filme",
+                        nome: nome,
+                        descricao: descricao,
+                        ano: Number(ano),
+                        acesso: acesso,
+                        preco: Number(preco) || 0,
+                        capa: capaBlob,
+                        video: videoArquivo,
+                        favorito: false,
+                        visualizacoes: 0,
+                        progresso: 0,
+                        duracao: 0,
+                        ultimoAcesso: null,
+                        dataPublicacao: Date.now()
+                    };
+
+                    await guardarConteudo(conteudo);
+                    alert("🎉 Filme publicado com sucesso!");
+                } else {
+                    const temporadas = [];
+                    const blocos = listaTemporadas
+                        ? listaTemporadas.querySelectorAll(".temporada-bloco")
+                        : [];
+
+                    for (let i = 0; i < blocos.length; i++) {
+                        const arquivos = blocos[i].querySelectorAll(".arquivo-episodio");
+                        const nomes = blocos[i].querySelectorAll(".nome-episodio");
+                        const episodios = [];
+
+                        for (let j = 0; j < arquivos.length; j++) {
+                            const arquivo = arquivos[j].files[0];
+
+                            if (!arquivo) continue;
+
+                            episodios.push({
+                                numero: j + 1,
+                                nome: nomes[j]
+                                    ? nomes[j].value.trim() || "Episódio " + (j + 1)
+                                    : "Episódio " + (j + 1),
+                                video: arquivo,
+                                progresso: 0,
+                                visualizacoes: 0,
+                                ultimoAcesso: null
+                            });
+                        }
+
+                        if (episodios.length) {
+                            temporadas.push({
+                                numero: i + 1,
+                                episodios: episodios
+                            });
+                        }
+                    }
+
+                    if (!temporadas.length) {
+                        alert("Adicione pelo menos uma temporada com um episódio.");
+                        return;
+                    }
+
+                    const conteudo = {
+                        id: gerarId(),
+                        tipo: "serie",
+                        nome: nome,
+                        descricao: descricao,
+                        ano: Number(ano),
+                        acesso: acesso,
+                        preco: Number(preco) || 0,
+                        capa: capaBlob,
+                        temporadas: temporadas,
+                        favorito: false,
+                        visualizacoes: 0,
+                        progresso: 0,
+                        ultimoAcesso: null,
+                        dataPublicacao: Date.now()
+                    };
+
+                    await guardarConteudo(conteudo);
+                    alert("🎉 Série publicada com sucesso!");
+                }
+
+                limparFormulario();
+                fecharPublicacao();
+                await carregarConteudos();
+
+            } catch (erro) {
+                console.error("Erro ao publicar:", erro);
+                alert(
+                    "❌ Não foi possível publicar o conteúdo.\n\n" +
+                    "Verifique os arquivos e tente novamente."
+                );
+            }
+        });
+    }
+
+    function limparFormulario() {
+        if (nomeConteudo) nomeConteudo.value = "";
+        if (descricaoConteudo) descricaoConteudo.value = "";
+        if (anoConteudo) anoConteudo.value = "";
+        if (arquivoCapa) {
+            arquivoCapa.value = "";
+            arquivoCapa._capaAutomatica = null;
+        }
+        if (arquivoVideo) arquivoVideo.value = "";
+        if (precoConteudo) precoConteudo.value = "";
+        if (aceitarRegras) aceitarRegras.checked = false;
+        if (listaTemporadas) listaTemporadas.innerHTML = "";
+        if (previewCapa) previewCapa.innerHTML = "Pré-visualização da capa";
+
+        atualizarTipoConteudo();
+        atualizarPreco();
+    }
+
+    /* =========================================================
+       FILTROS E BIBLIOTECA
+       ========================================================= */
+
+    function correspondeAoFiltro(conteudo) {
+        if (filtroAtual === "filmes") return conteudo.tipo === "filme";
+        if (filtroAtual === "series") return conteudo.tipo === "serie";
+        if (filtroAtual === "favoritos") return conteudo.favorito === true;
+
+        if (filtroAtual === "vendas") {
+            return conteudo.acesso === "venda" || conteudo.acesso === "aluguel";
+        }
+
+        return true;
+    }
+
+    async function carregarConteudos() {
+        if (!listaFilmes || !db) return;
+
+        limparURLs();
+
+        let brutos = [];
+
+        try {
+            brutos = await obterConteudos();
+        } catch (erro) {
+            console.error("Erro ao ler conteúdos:", erro);
+            return;
+        }
+
+        const conteudos = brutos
+            .map(normalizarConteudo)
+            .filter(Boolean);
+
+        conteudos.sort(function (a, b) {
+            return Number(b.dataPublicacao || 0) - Number(a.dataPublicacao || 0);
+        });
+
+        const pesquisa = campoPesquisa
+            ? campoPesquisa.value.toLowerCase().trim()
+            : "";
+
+        const filtrados = conteudos.filter(function (conteudo) {
+            if (!correspondeAoFiltro(conteudo)) return false;
+
+            if (!pesquisa) return true;
+
+            const texto = (
+                conteudo.nome + " " +
+                conteudo.descricao + " " +
+                conteudo.ano
+            ).toLowerCase();
+
+            return texto.includes(pesquisa);
+        });
+
+        listaFilmes.innerHTML = "";
+
+        if (!filtrados.length) {
+            listaFilmes.innerHTML =
+                `<div style="width:100%;padding:40px;text-align:center;">
+                    <h2>📭 Nenhum conteúdo encontrado</h2>
+                    <p>Publique um filme ou série para começar sua biblioteca.</p>
+                </div>`;
+            return;
+        }
+
+        filtrados.forEach(function (conteudo) {
+            try {
+                listaFilmes.appendChild(criarCard(conteudo));
+            } catch (erro) {
+                console.warn("Um conteúdo não pôde ser exibido:", erro);
+            }
+        });
+    }
+
+    function criarCard(conteudo) {
+        const card = document.createElement("article");
+        card.className = "card";
+
+        const capaURL = criarURL(conteudo.capa, "image/jpeg");
+        const tipoTexto = conteudo.tipo === "serie" ? "📺 Série" : "🎬 Filme";
+        const visualizacoes = totalVisualizacoes(conteudo);
+
+        card.innerHTML = `
+            <div class="capa ima-capa-clicavel"
+                 title="Ver detalhes"
+                 style="position:relative;cursor:pointer;">
+                ${
+                    capaURL
+                    ? `<img src="${capaURL}" alt="${escaparTexto(conteudo.nome)}"
+                            style="width:100%;height:100%;object-fit:cover;">`
+                    : `<div style="font-size:50px;text-align:center;padding:30px;">🎬</div>`
+                }
+
+                ${
+                    conteudo.favorito
+                    ? `<span style="position:absolute;top:8px;right:8px;font-size:22px;">❤️</span>`
+                    : ""
+                }
+            </div>
+
+            <h3 class="ima-titulo-clicavel" style="cursor:pointer;">
+                ${escaparTexto(conteudo.nome)}
+            </h3>
+
+            <p>${tipoTexto} • ${escaparTexto(conteudo.ano)}</p>
+
+            <p style="font-size:12px;opacity:.8;">
+                ${escaparTexto(textoAcesso(conteudo))}
+            </p>
+
+            <p style="font-size:12px;">
+                👁️ ${visualizacoes} visualizações
+            </p>
+
+            ${
+                Number(conteudo.progresso || 0) > 0
+                ? `<div style="margin-top:8px;font-size:12px;">
+                       ▶️ ${Math.round(conteudo.progresso)}% assistido
+                   </div>`
+                : ""
+            }
+
+            <div class="botoes">
+                <button class="botao-play" title="Assistir">▶️</button>
+                <button class="botao-detalhes" title="Detalhes">ℹ️</button>
+                <button class="botao-favorito" title="Favorito">
+                    ${conteudo.favorito ? "❤️" : "🤍"}
+                </button>
+                <button class="botao-share" title="Partilhar">🔗</button>
+                <button class="botao-download" title="Baixar">⬇️</button>
+                <button class="botao-apagar" title="Apagar">🗑️</button>
+            </div>
+        `;
+
+        const capa = card.querySelector(".ima-capa-clicavel");
+        const titulo = card.querySelector(".ima-titulo-clicavel");
+        const detalhes = card.querySelector(".botao-detalhes");
+
+        if (capa) capa.addEventListener("click", function () { abrirDetalhes(conteudo); });
+        if (titulo) titulo.addEventListener("click", function () { abrirDetalhes(conteudo); });
+        if (detalhes) detalhes.addEventListener("click", function () { abrirDetalhes(conteudo); });
+
+        const botaoPlay = card.querySelector(".botao-play");
+
+        if (botaoPlay) {
+            botaoPlay.addEventListener("click", function () {
+                if (conteudo.tipo === "filme") {
+                    reproduzirFilme(conteudo);
+                } else {
+                    abrirDetalhes(conteudo);
+                }
+            });
+        }
+
+        const botaoFavorito = card.querySelector(".botao-favorito");
+
+        if (botaoFavorito) {
+            botaoFavorito.addEventListener("click", async function () {
+                conteudo.favorito = !conteudo.favorito;
+                await atualizarConteudo(conteudo);
+                await carregarConteudos();
+            });
+        }
+
+        const botaoShare = card.querySelector(".botao-share");
+
+        if (botaoShare) {
+            botaoShare.addEventListener("click", function () {
+                partilhar(conteudo);
+            });
+        }
+
+        const botaoDownload = card.querySelector(".botao-download");
+
+        if (botaoDownload) {
+            botaoDownload.addEventListener("click", function () {
+                if (conteudo.tipo === "filme") {
+                    baixarVideo(conteudo.video, conteudo.nome);
+                } else {
+                    abrirDetalhes(conteudo);
+                }
+            });
+        }
+
+        const botaoApagar = card.querySelector(".botao-apagar");
+
+        if (botaoApagar) {
+            botaoApagar.addEventListener("click", async function () {
+                const confirmar = confirm(
+                    '⚠️ Tem certeza que deseja apagar "' + conteudo.nome + '"?'
+                );
+
+                if (!confirmar) return;
+
+                await apagarConteudo(conteudo.id);
+
+                if (
+                    detalhesAtual &&
+                    detalhesAtual.id === conteudo.id
+                ) {
+                    fecharDetalhes();
+                }
+
+                alert("🗑️ Conteúdo apagado.");
+                await carregarConteudos();
+            });
+        }
+
+        return card;
+    }
+
+    /* =========================================================
+       PLAYER
+       ========================================================= */
+
+    async function reproduzirFilme(conteudo) {
+        if (!videoPlayer) return;
+
+        const url = criarURL(conteudo.video, "video/mp4");
+
+        if (!url) {
+            alert("Este filme não possui um vídeo válido.");
+            return;
+        }
+
+        videoAtual = {
+            conteudo: conteudo,
+            episodio: null,
+            temporada: null
+        };
+
+        videoPlayer.pause();
+        videoPlayer.removeAttribute("src");
+        videoPlayer.load();
+        videoPlayer.src = url;
+
+        if (tituloPlayer) tituloPlayer.textContent = conteudo.nome;
+        if (descricaoPlayer) descricaoPlayer.textContent = conteudo.descricao;
+
+        if (modalPlayer) {
+            modalPlayer.style.display = "flex";
+            modalPlayer.classList.add("ativo");
+        }
+
+        videoPlayer.onloadedmetadata = async function () {
+            if (
+                Number(conteudo.progresso || 0) > 0 &&
+                Number(conteudo.progresso || 0) < 99 &&
+                Number.isFinite(videoPlayer.duration)
+            ) {
+                videoPlayer.currentTime =
+                    videoPlayer.duration * (Number(conteudo.progresso) / 100);
+            }
+
+            if (Number.isFinite(videoPlayer.duration)) {
+                conteudo.duracao = videoPlayer.duration;
+                await atualizarConteudo(conteudo);
+            }
+        };
+
+        conteudo.visualizacoes = Number(conteudo.visualizacoes || 0) + 1;
+        conteudo.ultimoAcesso = Date.now();
+
+        await atualizarConteudo(conteudo);
+        atualizarDetalhesSeAberto(conteudo);
+    }
+
+    async function reproduzirEpisodio(serie, temporada, episodio) {
+        if (!videoPlayer) return;
+
+        const url = criarURL(episodio.video, "video/mp4");
+
+        if (!url) {
+            alert("Este episódio não possui um vídeo válido.");
+            return;
+        }
+
+        videoAtual = {
+            conteudo: serie,
+            episodio: episodio,
+            temporada: temporada
+        };
+
+        videoPlayer.pause();
+        videoPlayer.removeAttribute("src");
+        videoPlayer.load();
+        videoPlayer.src = url;
+
+        if (tituloPlayer) {
+            tituloPlayer.textContent =
+                serie.nome +
+                " — T" +
+                temporada.numero +
+                " E" +
+                episodio.numero;
+        }
+
+        if (descricaoPlayer) {
+            descricaoPlayer.textContent = episodio.nome || "";
+        }
+
+        if (modalPlayer) {
+            modalPlayer.style.display = "flex";
+            modalPlayer.classList.add("ativo");
+        }
+
+        videoPlayer.onloadedmetadata = function () {
+            if (
+                Number(episodio.progresso || 0) > 0 &&
+                Number(episodio.progresso || 0) < 99 &&
+                Number.isFinite(videoPlayer.duration)
+            ) {
+                videoPlayer.currentTime =
+                    videoPlayer.duration * (Number(episodio.progresso) / 100);
+            }
+        };
+
+        episodio.visualizacoes = Number(episodio.visualizacoes || 0) + 1;
+        episodio.ultimoAcesso = Date.now();
+
+        await atualizarConteudo(serie);
+    }
+
+    if (videoPlayer) {
+        videoPlayer.addEventListener("timeupdate", async function () {
+            if (!videoAtual) return;
+            if (!videoPlayer.duration || !Number.isFinite(videoPlayer.duration)) return;
+
+            const progresso =
+                (videoPlayer.currentTime / videoPlayer.duration) * 100;
+
+            if (videoAtual.episodio) {
+                videoAtual.episodio.progresso = progresso;
+            } else {
+                videoAtual.conteudo.progresso = progresso;
+            }
+
+            if (Math.floor(progresso) % 5 === 0) {
+                try {
+                    await atualizarConteudo(videoAtual.conteudo);
+                } catch (erro) {
+                    console.warn("Progresso:", erro);
+                }
+            }
+        });
+
+        videoPlayer.addEventListener("ended", async function () {
+            if (!videoAtual) return;
+
+            if (videoAtual.episodio) {
+                videoAtual.episodio.progresso = 100;
+            } else {
+                videoAtual.conteudo.progresso = 100;
+            }
+
+            try {
+                await atualizarConteudo(videoAtual.conteudo);
+                await carregarConteudos();
+            } catch (erro) {
+                console.warn("Finalização:", erro);
+            }
+        });
+    }
+
+    function fecharVideo() {
+        if (videoPlayer) {
+            try {
+                videoPlayer.pause();
+                videoPlayer.removeAttribute("src");
+                videoPlayer.load();
+            } catch (erro) {}
+        }
+
+        if (modalPlayer) {
+            modalPlayer.style.display = "none";
+            modalPlayer.classList.remove("ativo");
+        }
+
+        videoAtual = null;
+    }
+
+    if (fecharPlayer) fecharPlayer.addEventListener("click", fecharVideo);
+
+    if (modalPlayer) {
+        modalPlayer.addEventListener("click", function (evento) {
+            if (evento.target === modalPlayer) {
+                fecharVideo();
+            }
+        });
+    }
+
+    /* =========================================================
+       ATUALIZAR DETALHES SE ESTIVER ABERTO
+       ========================================================= */
+
+    function atualizarDetalhesSeAberto(conteudo) {
+        const modal = document.getElementById("imaModalDetalhes");
+
+        if (
+            modal &&
+            modal.classList.contains("ativo") &&
+            detalhesAtual &&
+            detalhesAtual.id === conteudo.id
+        ) {
+            abrirDetalhes(conteudo);
+        }
+    }
+
+    /* =========================================================
+       DOWNLOAD
+       ========================================================= */
+
+    function baixarVideo(valor, nome) {
+        const blob = converterParaBlob(valor, "video/mp4");
+
+        if (!blob) {
+            alert("Este conteúdo não possui vídeo disponível para baixar.");
+            return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = String(nome || "video").replace(/[\\/:*?"<>|]/g, "_") + ".mp4";
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(function () {
+            try { URL.revokeObjectURL(url); } catch (erro) {}
+        }, 1000);
+    }
+
+    /* =========================================================
+       PARTILHAR
+       ========================================================= */
+
+    function partilhar(conteudo) {
+        const texto =
+            "🎬 " + conteudo.nome +
+            "\n\n" +
+            (conteudo.descricao || "") +
+            "\n\n" +
+            "📺 I.M.A FILMES";
+
+        if (navigator.share) {
+            navigator.share({
+                title: conteudo.nome,
+                text: texto
+            }).catch(function () {});
+            return;
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(texto)
+                .then(function () {
+                    alert("🔗 Informação copiada!");
+                })
+                .catch(function () {
+                    alert(texto);
+                });
+            return;
+        }
+
+        alert(texto);
+    }
+
+    /* =========================================================
+       PESQUISA
+       ========================================================= */
+
+    if (campoPesquisa) {
+        campoPesquisa.addEventListener("input", function () {
+            carregarConteudos();
+        });
+    }
+
+    /* =========================================================
+       MENU LATERAL
+       ========================================================= */
+
+    function configurarMenu() {
+        const botoes = document.querySelectorAll(".menu > button");
+
+        botoes.forEach(function (botao) {
+            botao.addEventListener("click", async function () {
+                const texto = botao.textContent.toLowerCase();
+
+                if (texto.includes("início")) {
+                    filtroAtual = "todos";
+                } else if (texto.includes("filmes")) {
+                    filtroAtual = "filmes";
+                } else if (texto.includes("séries")) {
+                    filtroAtual = "series";
+                } else if (texto.includes("favoritos")) {
+                    filtroAtual = "favoritos";
+                } else if (texto.includes("biblioteca")) {
+                    filtroAtual = "todos";
+                } else if (texto.includes("vendas")) {
+                    filtroAtual = "vendas";
+                } else {
+                    return;
+                }
+
+                botoes.forEach(function (b) {
+                    b.classList.remove("menu-ativo");
+                });
+
+                botao.classList.add("menu-ativo");
+
+                await carregarConteudos();
+            });
+        });
+    }
+
+    /* =========================================================
+       FECHAR MODAIS / ESC
+       ========================================================= */
+
+    document.addEventListener("keydown", function (evento) {
+        if (evento.key !== "Escape") return;
+
+        fecharPublicacao();
+        fecharVideo();
+        fecharDetalhes();
+    });
+
+    if (modalPublicacao) {
+        modalPublicacao.addEventListener("click", function (evento) {
+            if (evento.target === modalPublicacao) {
+                fecharPublicacao();
+            }
+        });
+    }
+
+    /* =========================================================
+       INICIALIZAÇÃO
+       ========================================================= */
+
+    async function iniciarAplicacao() {
+        try {
+            instalarEstiloDetalhes();
+            criarModalDetalhes();
+
+            await abrirBanco();
+
+            atualizarTipoConteudo();
+            atualizarPreco();
+            configurarMenu();
+
+            await carregarConteudos();
+
+            console.log("====================================");
+            console.log("✅ I.M.A FILMES carregado.");
+            console.log("🗄️ Banco preservado:", DB_NAME);
+            console.log("🎬 Modal profissional de detalhes ativo.");
+            console.log("====================================");
+
+        } catch (erro) {
+            console.error("Erro ao iniciar I.M.A FILMES:", erro);
+
+            if (listaFilmes) {
+                listaFilmes.innerHTML =
+                    `<div style="padding:30px;text-align:center;">
+                        <h2>⚠️ Erro ao carregar a biblioteca</h2>
+                        <p>Abra o Console (F12) para ver o erro.</p>
+                    </div>`;
+            }
+        }
+    }
+
+    iniciarAplicacao();
+});
