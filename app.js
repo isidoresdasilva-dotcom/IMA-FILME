@@ -3469,3 +3469,1989 @@ document.addEventListener("DOMContentLoaded", function () {
 
     iniciarAplicacao();
 });
+    /* =========================================================
+       ESTILO DO MODAL PROFISSIONAL
+       ========================================================= */
+
+    function instalarEstiloDetalhes() {
+        if (document.getElementById("imaEstiloDetalhes")) return;
+
+        const style = document.createElement("style");
+        style.id = "imaEstiloDetalhes";
+
+        style.textContent = `
+            #imaModalDetalhes {
+                position: fixed;
+                inset: 0;
+                z-index: 99990;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                background: rgba(0,0,0,.82);
+                backdrop-filter: blur(8px);
+            }
+
+            #imaModalDetalhes.ativo {
+                display: flex;
+            }
+
+            .ima-detalhes-caixa {
+                position: relative;
+                width: min(1050px, 96vw);
+                max-height: 94vh;
+                overflow-y: auto;
+                border-radius: 20px;
+                background: #101318;
+                color: #fff;
+                box-shadow: 0 25px 80px rgba(0,0,0,.6);
+                border: 1px solid rgba(255,255,255,.10);
+            }
+
+            .ima-detalhes-fechar {
+                position: absolute;
+                right: 16px;
+                top: 16px;
+                z-index: 5;
+                width: 42px;
+                height: 42px;
+                border: 0;
+                border-radius: 50%;
+                background: rgba(0,0,0,.65);
+                color: #fff;
+                font-size: 22px;
+                cursor: pointer;
+            }
+
+            .ima-detalhes-hero {
+                min-height: 390px;
+                display: grid;
+                grid-template-columns: 270px 1fr;
+                gap: 28px;
+                padding: 38px;
+                align-items: center;
+                background:
+                    radial-gradient(circle at 75% 30%, rgba(255,255,255,.12), transparent 35%),
+                    linear-gradient(135deg, #171b23, #090b0f);
+            }
+
+            .ima-detalhes-capa {
+                width: 100%;
+                aspect-ratio: 2/3;
+                overflow: hidden;
+                border-radius: 14px;
+                background: #222;
+                box-shadow: 0 15px 40px rgba(0,0,0,.45);
+            }
+
+            .ima-detalhes-capa img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+
+            .ima-detalhes-info h1 {
+                margin: 0 55px 10px 0;
+                font-size: clamp(28px, 5vw, 48px);
+                line-height: 1.05;
+            }
+
+            .ima-detalhes-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin: 12px 0 18px;
+            }
+
+            .ima-detalhes-badge {
+                padding: 7px 11px;
+                border-radius: 999px;
+                background: rgba(255,255,255,.10);
+                font-size: 13px;
+            }
+
+            .ima-detalhes-descricao {
+                max-width: 720px;
+                color: rgba(255,255,255,.82);
+                line-height: 1.65;
+                white-space: pre-wrap;
+            }
+
+            .ima-detalhes-acoes {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-top: 22px;
+            }
+
+            .ima-detalhes-btn {
+                border: 0;
+                border-radius: 10px;
+                padding: 12px 17px;
+                color: #fff;
+                background: #242a34;
+                cursor: pointer;
+                font-weight: 700;
+            }
+
+            .ima-detalhes-btn.principal {
+                background: #e50914;
+            }
+
+            .ima-detalhes-btn:hover {
+                transform: translateY(-1px);
+                filter: brightness(1.08);
+            }
+
+            .ima-detalhes-progresso {
+                margin-top: 22px;
+                max-width: 650px;
+            }
+
+            .ima-detalhes-barra {
+                height: 7px;
+                margin-top: 8px;
+                overflow: hidden;
+                border-radius: 99px;
+                background: rgba(255,255,255,.13);
+            }
+
+            .ima-detalhes-barra > span {
+                display: block;
+                height: 100%;
+                background: #e50914;
+                border-radius: inherit;
+            }
+
+            .ima-detalhes-corpo {
+                padding: 0 38px 38px;
+            }
+
+            .ima-detalhes-secao {
+                margin-top: 28px;
+            }
+
+            .ima-detalhes-secao h2 {
+                margin-bottom: 14px;
+            }
+
+            .ima-temporada {
+                margin-top: 12px;
+                border: 1px solid rgba(255,255,255,.09);
+                border-radius: 13px;
+                overflow: hidden;
+                background: rgba(255,255,255,.035);
+            }
+
+            .ima-temporada-titulo {
+                padding: 15px 17px;
+                font-weight: 800;
+                background: rgba(255,255,255,.045);
+            }
+
+            .ima-episodio {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 12px;
+                align-items: center;
+                padding: 13px 17px;
+                border-top: 1px solid rgba(255,255,255,.07);
+            }
+
+            .ima-episodio-nome {
+                font-weight: 700;
+            }
+
+            .ima-episodio-sub {
+                display: block;
+                margin-top: 4px;
+                font-size: 12px;
+                opacity: .65;
+            }
+
+            .ima-episodio button {
+                border: 0;
+                border-radius: 9px;
+                padding: 9px 12px;
+                cursor: pointer;
+                background: #e50914;
+                color: #fff;
+                font-weight: 700;
+            }
+
+            @media (max-width: 700px) {
+                #imaModalDetalhes {
+                    padding: 8px;
+                }
+
+                .ima-detalhes-hero {
+                    grid-template-columns: 125px 1fr;
+                    gap: 16px;
+                    padding: 24px 18px;
+                    min-height: 0;
+                }
+
+                .ima-detalhes-info h1 {
+                    font-size: 26px;
+                    margin-right: 35px;
+                }
+
+                .ima-detalhes-corpo {
+                    padding: 0 18px 25px;
+                }
+
+                .ima-detalhes-acoes {
+                    gap: 7px;
+                }
+
+                .ima-detalhes-btn {
+                    padding: 10px 12px;
+                    font-size: 13px;
+                }
+
+                .ima-episodio {
+                    grid-template-columns: 1fr;
+                }
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
+
+    function criarModalDetalhes() {
+        if (document.getElementById("imaModalDetalhes")) return;
+
+        const modal = document.createElement("div");
+        modal.id = "imaModalDetalhes";
+
+        modal.innerHTML = `
+            <div class="ima-detalhes-caixa" role="dialog" aria-modal="true">
+                <button class="ima-detalhes-fechar" id="imaFecharDetalhes" title="Fechar">✕</button>
+                <div id="imaDetalhesConteudo"></div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        modal.addEventListener("click", function (evento) {
+            if (evento.target === modal) fecharDetalhes();
+        });
+
+        document.getElementById("imaFecharDetalhes")
+            .addEventListener("click", fecharDetalhes);
+    }
+
+    function fecharDetalhes() {
+        const modal = document.getElementById("imaModalDetalhes");
+
+        if (modal) {
+            modal.classList.remove("ativo");
+        }
+
+        detalhesAtual = null;
+    }
+
+    /* =========================================================
+       MODAL DE DETALHES
+       ========================================================= */
+
+    async function abrirDetalhes(conteudo) {
+        conteudo = normalizarConteudo(conteudo);
+
+        if (!conteudo) return;
+
+        detalhesAtual = conteudo;
+
+        criarModalDetalhes();
+
+        const modal = document.getElementById("imaModalDetalhes");
+        const area = document.getElementById("imaDetalhesConteudo");
+
+        const capaURL = criarURL(conteudo.capa, "image/jpeg");
+        const tipoTexto =
+            conteudo.tipo === "serie"
+                ? "📺 Série"
+                : "🎬 Filme";
+
+        const visualizacoes = totalVisualizacoes(conteudo);
+
+        let html = `
+            <div class="ima-detalhes-hero">
+
+                <div class="ima-detalhes-capa">
+                    ${
+                        capaURL
+                            ? `<img src="${capaURL}" alt="${escaparTexto(conteudo.nome)}">`
+                            : `<div style="height:100%;display:flex;align-items:center;justify-content:center;font-size:70px;">🎬</div>`
+                    }
+                </div>
+
+                <div class="ima-detalhes-info">
+
+                    <h1>${escaparTexto(conteudo.nome)}</h1>
+
+                    <div class="ima-detalhes-meta">
+
+                        <span class="ima-detalhes-badge">
+                            ${tipoTexto}
+                        </span>
+
+                        ${
+                            conteudo.ano
+                                ? `<span class="ima-detalhes-badge">
+                                    📅 ${escaparTexto(conteudo.ano)}
+                                   </span>`
+                                : ""
+                        }
+
+                        <span class="ima-detalhes-badge">
+                            👁️ ${visualizacoes} visualizações
+                        </span>
+
+                        <span class="ima-detalhes-badge">
+                            ${escaparTexto(textoAcesso(conteudo))}
+                        </span>
+
+                    </div>
+
+                    <div class="ima-detalhes-descricao">
+                        ${escaparTexto(
+                            conteudo.descricao || "Sem descrição."
+                        )}
+                    </div>
+
+                    <div class="ima-detalhes-acoes">
+
+                        <button
+                            class="ima-detalhes-btn principal"
+                            id="imaDetalhesAssistir"
+                        >
+                            ▶️ ${
+                                conteudo.tipo === "serie"
+                                    ? "Escolher episódio"
+                                    : "Assistir agora"
+                            }
+                        </button>
+
+                        <button
+                            class="ima-detalhes-btn"
+                            id="imaDetalhesFavorito"
+                        >
+                            ${
+                                conteudo.favorito
+                                    ? "❤️ Favorito"
+                                    : "🤍 Favoritar"
+                            }
+                        </button>
+
+                        <button
+                            class="ima-detalhes-btn"
+                            id="imaDetalhesCompartilhar"
+                        >
+                            🔗 Partilhar
+                        </button>
+
+                        ${
+                            conteudo.tipo === "filme"
+                                ? `
+                                    <button
+                                        class="ima-detalhes-btn"
+                                        id="imaDetalhesBaixar"
+                                    >
+                                        ⬇️ Baixar
+                                    </button>
+                                  `
+                                : ""
+                        }
+
+                    </div>
+
+                    ${
+                        Number(conteudo.progresso || 0) > 0
+                            ? `
+                                <div class="ima-detalhes-progresso">
+
+                                    <div>
+                                        ▶️ Continuar assistindo —
+                                        ${Math.round(conteudo.progresso)}%
+                                    </div>
+
+                                    <div class="ima-detalhes-barra">
+                                        <span
+                                            style="
+                                                width:${Math.min(
+                                                    100,
+                                                    Math.max(
+                                                        0,
+                                                        conteudo.progresso
+                                                    )
+                                                )}%
+                                            "
+                                        ></span>
+                                    </div>
+
+                                </div>
+                              `
+                            : ""
+                    }
+
+                </div>
+            </div>
+
+            <div class="ima-detalhes-corpo">
+        `;
+
+        if (conteudo.tipo === "filme") {
+
+            html += `
+                <div class="ima-detalhes-secao">
+
+                    <h2>🎬 Sobre este filme</h2>
+
+                    <p style="opacity:.72;">
+                        Publicado em
+                        ${escaparTexto(
+                            formatarData(conteudo.dataPublicacao)
+                            || "data não disponível"
+                        )}.
+
+                        ${
+                            conteudo.duracao
+                                ? " Duração: " +
+                                  escaparTexto(
+                                      formatarTempo(
+                                          conteudo.duracao
+                                      )
+                                  ) +
+                                  "."
+                                : ""
+                        }
+                    </p>
+
+                </div>
+            `;
+
+        } else {
+
+            html += `
+                <div class="ima-detalhes-secao">
+
+                    <h2>📺 Temporadas e episódios</h2>
+
+                    <p style="opacity:.72;">
+                        ${(conteudo.temporadas || []).length}
+                        temporada(s) •
+                        ${totalEpisodios(conteudo)}
+                        episódio(s)
+                    </p>
+            `;
+
+            if (
+                !conteudo.temporadas ||
+                conteudo.temporadas.length === 0
+            ) {
+
+                html += `
+                    <p>
+                        Esta série ainda não possui episódios.
+                    </p>
+                `;
+
+            } else {
+
+                conteudo.temporadas.forEach(function (temporada) {
+
+                    html += `
+                        <div class="ima-temporada">
+
+                            <div class="ima-temporada-titulo">
+                                📚 Temporada
+                                ${escaparTexto(
+                                    temporada.numero || ""
+                                )}
+                            </div>
+                    `;
+
+                    (temporada.episodios || []).forEach(
+                        function (episodio) {
+
+                            const progresso =
+                                Number(
+                                    episodio.progresso || 0
+                                );
+
+                            html += `
+                                <div class="ima-episodio">
+
+                                    <div>
+
+                                        <span class="ima-episodio-nome">
+                                            Episódio
+                                            ${escaparTexto(
+                                                episodio.numero || ""
+                                            )}
+                                            —
+                                            ${escaparTexto(
+                                                episodio.nome ||
+                                                "Episódio"
+                                            )}
+                                        </span>
+
+                                        <span class="ima-episodio-sub">
+                                            👁️
+                                            ${Number(
+                                                episodio.visualizacoes || 0
+                                            )}
+                                            visualizações
+
+                                            ${
+                                                progresso > 0
+                                                    ? " • " +
+                                                      Math.round(
+                                                          progresso
+                                                      ) +
+                                                      "% assistido"
+                                                    : ""
+                                            }
+                                        </span>
+
+                                    </div>
+
+                                    <button
+                                        class="ima-episodio-play"
+                                        data-temporada="${escaparTexto(
+                                            temporada.numero
+                                        )}"
+                                        data-episodio="${escaparTexto(
+                                            episodio.numero
+                                        )}"
+                                    >
+                                        ▶️ Assistir
+                                    </button>
+
+                                </div>
+                            `;
+                        }
+                    );
+
+                    html += `</div>`;
+                });
+            }
+
+            html += `</div>`;
+        }
+
+        html += `</div>`;
+
+        area.innerHTML = html;
+
+        modal.classList.add("ativo");
+
+        const btnAssistir =
+            document.getElementById(
+                "imaDetalhesAssistir"
+            );
+
+        const btnFavorito =
+            document.getElementById(
+                "imaDetalhesFavorito"
+            );
+
+        const btnCompartilhar =
+            document.getElementById(
+                "imaDetalhesCompartilhar"
+            );
+
+        const btnBaixar =
+            document.getElementById(
+                "imaDetalhesBaixar"
+            );
+
+        if (btnAssistir) {
+
+            btnAssistir.addEventListener(
+                "click",
+                function () {
+
+                    if (conteudo.tipo === "filme") {
+
+                        fecharDetalhes();
+
+                        reproduzirFilme(conteudo);
+
+                    } else {
+
+                        const primeiro =
+                            encontrarPrimeiroEpisodio(
+                                conteudo
+                            );
+
+                        if (primeiro) {
+
+                            fecharDetalhes();
+
+                            reproduzirEpisodio(
+                                conteudo,
+                                primeiro.temporada,
+                                primeiro.episodio
+                            );
+
+                        } else {
+
+                            alert(
+                                "Esta série não possui episódios com vídeo."
+                            );
+                        }
+                    }
+                }
+            );
+        }
+
+        if (btnFavorito) {
+
+            btnFavorito.addEventListener(
+                "click",
+                async function () {
+
+                    conteudo.favorito =
+                        !conteudo.favorito;
+
+                    await atualizarConteudo(
+                        conteudo
+                    );
+
+                    await abrirDetalhes(
+                        conteudo
+                    );
+
+                    await carregarConteudos();
+                }
+            );
+        }
+
+        if (btnCompartilhar) {
+
+            btnCompartilhar.addEventListener(
+                "click",
+                function () {
+                    partilhar(conteudo);
+                }
+            );
+        }
+
+        if (btnBaixar) {
+
+            btnBaixar.addEventListener(
+                "click",
+                function () {
+
+                    baixarVideo(
+                        conteudo.video,
+                        conteudo.nome
+                    );
+                }
+            );
+        }
+
+        area
+            .querySelectorAll(
+                ".ima-episodio-play"
+            )
+            .forEach(function (botao) {
+
+                botao.addEventListener(
+                    "click",
+                    function () {
+
+                        const temporadaNumero =
+                            Number(
+                                botao.dataset.temporada
+                            );
+
+                        const episodioNumero =
+                            Number(
+                                botao.dataset.episodio
+                            );
+
+                        const temporada =
+                            (conteudo.temporadas || [])
+                                .find(function (t) {
+
+                                    return Number(
+                                        t.numero
+                                    ) === temporadaNumero;
+                                });
+
+                        const episodio =
+                            temporada &&
+                            (temporada.episodios || [])
+                                .find(function (e) {
+
+                                    return Number(
+                                        e.numero
+                                    ) === episodioNumero;
+                                });
+
+                        if (
+                            !temporada ||
+                            !episodio
+                        ) {
+
+                            alert(
+                                "Episódio não encontrado."
+                            );
+
+                            return;
+                        }
+
+                        fecharDetalhes();
+
+                        reproduzirEpisodio(
+                            conteudo,
+                            temporada,
+                            episodio
+                        );
+                    }
+                );
+            });
+    }
+
+    function encontrarPrimeiroEpisodio(serie) {
+
+        for (
+            const temporada of
+            (serie.temporadas || [])
+        ) {
+
+            for (
+                const episodio of
+                (temporada.episodios || [])
+            ) {
+
+                if (
+                    episodio &&
+                    episodio.video
+                ) {
+
+                    return {
+                        temporada: temporada,
+                        episodio: episodio
+                    };
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /* =========================================================
+       PUBLICAÇÃO
+       ========================================================= */
+    function limparFormulario() {
+        if (nomeConteudo) nomeConteudo.value = "";
+        if (descricaoConteudo) descricaoConteudo.value = "";
+        if (anoConteudo) anoConteudo.value = "";
+
+        if (arquivoCapa) {
+            arquivoCapa.value = "";
+            arquivoCapa._capaAutomatica = null;
+        }
+
+        if (arquivoVideo) {
+            arquivoVideo.value = "";
+        }
+
+        if (precoConteudo) {
+            precoConteudo.value = "";
+        }
+
+        if (aceitarRegras) {
+            aceitarRegras.checked = false;
+        }
+
+        if (listaTemporadas) {
+            listaTemporadas.innerHTML = "";
+        }
+
+        if (previewCapa) {
+            previewCapa.innerHTML = "Pré-visualização da capa";
+        }
+
+        atualizarTipoConteudo();
+        atualizarPreco();
+    }
+
+    /* =========================================================
+       FILTROS E BIBLIOTECA
+       ========================================================= */
+
+    function correspondeAoFiltro(conteudo) {
+        if (filtroAtual === "filmes") {
+            return conteudo.tipo === "filme";
+        }
+
+        if (filtroAtual === "series") {
+            return conteudo.tipo === "serie";
+        }
+
+        if (filtroAtual === "favoritos") {
+            return conteudo.favorito === true;
+        }
+
+        if (filtroAtual === "vendas") {
+            return (
+                conteudo.acesso === "venda" ||
+                conteudo.acesso === "aluguel"
+            );
+        }
+
+        return true;
+    }
+
+    async function carregarConteudos() {
+        if (!listaFilmes || !db) return;
+
+        try {
+            const conteudos = await obterTodosConteudos();
+
+            listaFilmes.innerHTML = "";
+
+            const filtrados = conteudos.filter(correspondeAoFiltro);
+
+            if (!filtrados.length) {
+                listaFilmes.innerHTML = `
+                    <div style="
+                        width:100%;
+                        padding:40px;
+                        text-align:center;
+                        opacity:.75;
+                    ">
+                        <div style="font-size:50px;">🎬</div>
+                        <h3>Nenhum conteúdo encontrado</h3>
+                        <p>Publique seu primeiro filme ou série.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtrados.forEach(function (conteudo) {
+                try {
+                    const card = criarCard(conteudo);
+
+                    if (card) {
+                        listaFilmes.appendChild(card);
+                    }
+                } catch (erro) {
+                    console.error(
+                        "Erro ao criar card:",
+                        conteudo,
+                        erro
+                    );
+                }
+            });
+
+        } catch (erro) {
+            console.error(
+                "Erro ao carregar conteúdos:",
+                erro
+            );
+        }
+    }
+
+    function criarCard(conteudo) {
+        const card = document.createElement("article");
+        card.className = "card";
+        card.dataset.id = conteudo.id;
+
+        const capaURL = criarURL(
+            conteudo.capa,
+            "image/jpeg"
+        );
+
+        const tipoTexto =
+            conteudo.tipo === "serie"
+                ? "📺 Série"
+                : "🎬 Filme";
+
+        const acessoTexto =
+            conteudo.acesso === "venda"
+                ? "💰 Venda"
+                : conteudo.acesso === "aluguel"
+                    ? "🎟️ Aluguel"
+                    : "🆓 Gratuito";
+
+        const visualizacoes =
+            totalVisualizacoes(conteudo);
+
+        const favorito =
+            conteudo.favorito === true;
+
+        let progresso = Number(
+            conteudo.progresso || 0
+        );
+
+        if (!Number.isFinite(progresso)) {
+            progresso = 0;
+        }
+
+        progresso = Math.max(
+            0,
+            Math.min(100, progresso)
+        );
+
+        const capaHTML = capaURL
+            ? `
+                <img
+                    src="${capaURL}"
+                    alt="${escaparHTML(conteudo.nome || "Capa")}"
+                    style="
+                        width:100%;
+                        height:100%;
+                        object-fit:cover;
+                    "
+                >
+            `
+            : `
+                <div style="
+                    width:100%;
+                    height:100%;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    font-size:50px;
+                    background:linear-gradient(
+                        135deg,
+                        #111,
+                        #292929
+                    );
+                ">
+                    ${conteudo.tipo === "serie" ? "📺" : "🎬"}
+                </div>
+            `;
+
+        card.innerHTML = `
+            <div
+                class="capa"
+                data-acao="detalhes"
+                style="
+                    position:relative;
+                    cursor:pointer;
+                    overflow:hidden;
+                "
+            >
+                ${capaHTML}
+
+                ${
+                    progresso > 0
+                        ? `
+                            <div style="
+                                position:absolute;
+                                bottom:0;
+                                left:0;
+                                width:100%;
+                                height:5px;
+                                background:rgba(255,255,255,.2);
+                            ">
+                                <div style="
+                                    width:${progresso}%;
+                                    height:100%;
+                                    background:#00ff88;
+                                "></div>
+                            </div>
+                        `
+                        : ""
+                }
+            </div>
+
+            <h3>
+                ${escaparHTML(
+                    conteudo.nome || "Sem título"
+                )}
+            </h3>
+
+            <p>
+                ${tipoTexto}
+                •
+                ${conteudo.ano || ""}
+            </p>
+
+            <p style="
+                font-size:12px;
+                opacity:.7;
+                margin-top:4px;
+            ">
+                ${acessoTexto}
+                •
+                👁️ ${visualizacoes}
+            </p>
+
+            <div class="botoes">
+                <button
+                    type="button"
+                    data-acao="assistir"
+                    title="Assistir"
+                >
+                    ▶️
+                </button>
+
+                <button
+                    type="button"
+                    data-acao="baixar"
+                    title="Baixar"
+                >
+                    ⬇️
+                </button>
+
+                <button
+                    type="button"
+                    data-acao="favorito"
+                    title="Favorito"
+                >
+                    ${favorito ? "❤️" : "🤍"}
+                </button>
+
+                <button
+                    type="button"
+                    data-acao="compartilhar"
+                    title="Compartilhar"
+                >
+                    🔗
+                </button>
+            </div>
+        `;
+
+        card.querySelectorAll("[data-acao]").forEach(
+            function (elemento) {
+                elemento.addEventListener(
+                    "click",
+                    function (evento) {
+                        evento.stopPropagation();
+
+                        const acao =
+                            elemento.dataset.acao;
+
+                        executarAcaoCard(
+                            acao,
+                            conteudo
+                        );
+                    }
+                );
+            }
+        );
+
+        const capa = card.querySelector(
+            '[data-acao="detalhes"]'
+        );
+
+        if (capa) {
+            capa.addEventListener(
+                "click",
+                function () {
+                    abrirDetalhes(conteudo.id);
+                }
+            );
+        }
+
+        return card;
+    }
+
+    async function executarAcaoCard(
+        acao,
+        conteudo
+    ) {
+        if (!conteudo) return;
+
+        if (acao === "detalhes") {
+            abrirDetalhes(conteudo.id);
+            return;
+        }
+
+        if (acao === "assistir") {
+            if (conteudo.tipo === "filme") {
+                abrirPlayer(conteudo);
+            } else {
+                abrirDetalhes(conteudo.id);
+            }
+
+            return;
+        }
+
+        if (acao === "baixar") {
+            baixarConteudo(conteudo);
+            return;
+        }
+
+        if (acao === "favorito") {
+            await alternarFavorito(conteudo);
+            return;
+        }
+
+        if (acao === "compartilhar") {
+            compartilharConteudo(conteudo);
+        }
+    }
+
+    /* =========================================================
+       PLAYER
+       ========================================================= */
+
+    function abrirPlayer(conteudo, episodio) {
+        if (!videoPlayer || !modalPlayer) {
+            alert(
+                "O player não está disponível."
+            );
+            return;
+        }
+
+        let arquivoVideo = null;
+        let titulo = conteudo.nome || "Filme";
+        let descricao =
+            conteudo.descricao || "";
+
+        if (episodio) {
+            arquivoVideo = episodio.video;
+
+            titulo =
+                conteudo.nome +
+                " - " +
+                (
+                    episodio.nome ||
+                    "Episódio " +
+                    episodio.numero
+                );
+        } else {
+            arquivoVideo = conteudo.video;
+        }
+
+        const url = criarURL(
+            arquivoVideo,
+            "video/mp4"
+        );
+
+        if (!url) {
+            alert(
+                "❌ O vídeo deste conteúdo não está disponível."
+            );
+            return;
+        }
+
+        videoAtual = {
+            conteudoId: conteudo.id,
+            episodio: episodio || null
+        };
+
+        videoPlayer.src = url;
+
+        if (tituloPlayer) {
+            tituloPlayer.textContent = titulo;
+        }
+
+        if (descricaoPlayer) {
+            descricaoPlayer.textContent =
+                descricao;
+        }
+
+        modalPlayer.style.display = "flex";
+        modalPlayer.classList.add("ativo");
+
+        try {
+            videoPlayer.currentTime =
+                episodio
+                    ? Number(
+                        episodio.progresso || 0
+                    )
+                    : Number(
+                        conteudo.progresso || 0
+                    );
+        } catch (erro) {
+            console.warn(
+                "Não foi possível restaurar o progresso:",
+                erro
+            );
+        }
+
+        videoPlayer.play().catch(function () {});
+
+        registrarVisualizacao(
+            conteudo,
+            episodio
+        );
+    }
+
+    function fecharPlayer() {
+        if (!modalPlayer) return;
+
+        try {
+            if (videoPlayer) {
+                videoPlayer.pause();
+                videoPlayer.removeAttribute("src");
+                videoPlayer.load();
+            }
+        } catch (erro) {}
+
+        modalPlayer.style.display = "none";
+        modalPlayer.classList.remove("ativo");
+
+        videoAtual = null;
+    }
+
+    if (fecharPlayer) {
+        fecharPlayer.addEventListener(
+            "click",
+            fecharPlayer
+        );
+    }
+
+    if (modalPlayer) {
+        modalPlayer.addEventListener(
+            "click",
+            function (evento) {
+                if (
+                    evento.target ===
+                    modalPlayer
+                ) {
+                    fecharPlayer();
+                }
+            }
+        );
+    }
+
+    if (videoPlayer) {
+        videoPlayer.addEventListener(
+            "timeupdate",
+            function () {
+                salvarProgressoAtual();
+            }
+        );
+
+        videoPlayer.addEventListener(
+            "ended",
+            function () {
+                salvarProgressoAtual(true);
+            }
+        );
+    }
+
+    async function registrarVisualizacao(
+        conteudo,
+        episodio
+    ) {
+        try {
+            if (episodio) {
+                episodio.visualizacoes =
+                    Number(
+                        episodio.visualizacoes || 0
+                    ) + 1;
+
+                conteudo.ultimoAcesso =
+                    Date.now();
+
+                await atualizarConteudo(
+                    conteudo
+                );
+            } else {
+                conteudo.visualizacoes =
+                    Number(
+                        conteudo.visualizacoes || 0
+                    ) + 1;
+
+                conteudo.ultimoAcesso =
+                    Date.now();
+
+                await atualizarConteudo(
+                    conteudo
+                );
+            }
+
+        } catch (erro) {
+            console.warn(
+                "Erro ao registrar visualização:",
+                erro
+            );
+        }
+    }
+
+    async function salvarProgressoAtual(
+        finalizado
+    ) {
+        if (
+            !videoAtual ||
+            !videoPlayer ||
+            !videoAtual.conteudoId
+        ) {
+            return;
+        }
+
+        try {
+            const conteudo =
+                await obterConteudo(
+                    videoAtual.conteudoId
+                );
+
+            if (!conteudo) return;
+
+            const duracao =
+                Number(
+                    videoPlayer.duration
+                );
+
+            const tempo =
+                Number(
+                    videoPlayer.currentTime
+                );
+
+            let progresso = 0;
+
+            if (
+                Number.isFinite(duracao) &&
+                duracao > 0 &&
+                Number.isFinite(tempo)
+            ) {
+                progresso =
+                    (tempo / duracao) * 100;
+            }
+
+            if (finalizado) {
+                progresso = 100;
+            }
+
+            progresso = Math.max(
+                0,
+                Math.min(
+                    100,
+                    progresso
+                )
+            );
+
+            if (videoAtual.episodio) {
+                const temporada = (
+                    conteudo.temporadas || []
+                ).find(function (temp) {
+                    return (
+                        temp.episodios || []
+                    ).some(function (ep) {
+                        return (
+                            ep ===
+                            videoAtual.episodio
+                        );
+                    });
+                });
+
+                if (temporada) {
+                    const episodio =
+                        (
+                            temporada.episodios ||
+                            []
+                        ).find(function (ep) {
+                            return (
+                                ep ===
+                                videoAtual.episodio
+                            );
+                        });
+
+                    if (episodio) {
+                        episodio.progresso =
+                            progresso;
+                    }
+                }
+            } else {
+                conteudo.progresso =
+                    progresso;
+
+                if (
+                    Number.isFinite(duracao) &&
+                    duracao > 0
+                ) {
+                    conteudo.duracao =
+                        duracao;
+                }
+            }
+
+            conteudo.ultimoAcesso =
+                Date.now();
+
+            await atualizarConteudo(
+                conteudo
+            );
+
+        } catch (erro) {
+            console.warn(
+                "Erro ao salvar progresso:",
+                erro
+            );
+        }
+    }
+
+    /* =========================================================
+       FAVORITOS
+       ========================================================= */
+
+    async function alternarFavorito(
+        conteudo
+    ) {
+        try {
+            conteudo.favorito =
+                !conteudo.favorito;
+
+            await atualizarConteudo(
+                conteudo
+            );
+
+            await carregarConteudos();
+
+            if (
+                detalhesAtual &&
+                detalhesAtual.id ===
+                    conteudo.id
+            ) {
+                detalhesAtual =
+                    await obterConteudo(
+                        conteudo.id
+                    );
+
+                if (detalhesAtual) {
+                    abrirDetalhes(
+                        detalhesAtual.id
+                    );
+                }
+            }
+
+        } catch (erro) {
+            console.error(
+                "Erro ao alterar favorito:",
+                erro
+            );
+        }
+    }
+
+    /* =========================================================
+       DOWNLOAD
+       ========================================================= */
+
+    function baixarConteudo(conteudo) {
+        if (!conteudo) return;
+
+        let arquivo = null;
+        let nomeArquivo =
+            conteudo.nome ||
+            "conteudo";
+
+        if (conteudo.tipo === "filme") {
+            arquivo = conteudo.video;
+            nomeArquivo += ".mp4";
+        } else {
+            const primeiro =
+                encontrarPrimeiroEpisodio(
+                    conteudo
+                );
+
+            if (primeiro) {
+                arquivo =
+                    primeiro.episodio.video;
+
+                nomeArquivo +=
+                    "_T" +
+                    primeiro.temporada.numero +
+                    "_E" +
+                    primeiro.episodio.numero +
+                    ".mp4";
+            }
+        }
+
+        if (!arquivo) {
+            alert(
+                "❌ Não existe vídeo disponível para baixar."
+            );
+            return;
+        }
+
+        const url = criarURL(
+            arquivo,
+            "video/mp4"
+        );
+
+        if (!url) {
+            alert(
+                "❌ Não foi possível preparar o download."
+            );
+            return;
+        }
+
+        const link =
+            document.createElement("a");
+
+        link.href = url;
+        link.download =
+            nomeArquivo
+                .replace(/[\\/:*?"<>|]/g, "_");
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    }
+
+    /* =========================================================
+       COMPARTILHAR
+       ========================================================= */
+
+    async function compartilharConteudo(
+        conteudo
+    ) {
+        if (!conteudo) return;
+
+        const texto =
+            "🎬 " +
+            (conteudo.nome || "I.M.A FILMES") +
+            "\n\n" +
+            (
+                conteudo.descricao ||
+                "Confira este conteúdo no I.M.A FILMES."
+            );
+
+        try {
+            if (
+                navigator.share
+            ) {
+                await navigator.share({
+                    title:
+                        conteudo.nome ||
+                        "I.M.A FILMES",
+                    text: texto
+                });
+
+                return;
+            }
+        } catch (erro) {
+            if (
+                erro &&
+                erro.name ===
+                    "AbortError"
+            ) {
+                return;
+            }
+        }
+
+        try {
+            await navigator.clipboard.writeText(
+                texto
+            );
+
+            alert(
+                "🔗 Informações copiadas para a área de transferência."
+            );
+
+        } catch (erro) {
+            prompt(
+                "Copie o texto abaixo:",
+                texto
+            );
+        }
+    }
+
+    /* =========================================================
+       PESQUISA
+       ========================================================= */
+
+    if (campoPesquisa) {
+        campoPesquisa.addEventListener(
+            "input",
+            async function () {
+                const termo =
+                    campoPesquisa.value
+                        .trim()
+                        .toLowerCase();
+
+                if (!db || !listaFilmes) {
+                    return;
+                }
+
+                try {
+                    const conteudos =
+                        await obterTodosConteudos();
+
+                    listaFilmes.innerHTML =
+                        "";
+
+                    const resultados =
+                        conteudos.filter(
+                            function (conteudo) {
+                                if (
+                                    !correspondeAoFiltro(
+                                        conteudo
+                                    )
+                                ) {
+                                    return false;
+                                }
+
+                                const nome =
+                                    String(
+                                        conteudo.nome ||
+                                        ""
+                                    ).toLowerCase();
+
+                                const descricao =
+                                    String(
+                                        conteudo.descricao ||
+                                        ""
+                                    ).toLowerCase();
+
+                                return (
+                                    !termo ||
+                                    nome.includes(
+                                        termo
+                                    ) ||
+                                    descricao.includes(
+                                        termo
+                                    )
+                                );
+                            }
+                        );
+
+                    if (!resultados.length) {
+                        listaFilmes.innerHTML = `
+                            <div style="
+                                width:100%;
+                                padding:40px;
+                                text-align:center;
+                                opacity:.7;
+                            ">
+                                🔎
+                                <h3>
+                                    Nenhum resultado encontrado
+                                </h3>
+                                <p>
+                                    Tente pesquisar outro nome.
+                                </p>
+                            </div>
+                        `;
+
+                        return;
+                    }
+
+                    resultados.forEach(
+                        function (conteudo) {
+                            try {
+                                const card =
+                                    criarCard(
+                                        conteudo
+                                    );
+
+                                if (card) {
+                                    listaFilmes.appendChild(
+                                        card
+                                    );
+                                }
+
+                            } catch (erro) {
+                                console.error(
+                                    "Erro no resultado:",
+                                    erro
+                                );
+                            }
+                        }
+                    );
+
+                } catch (erro) {
+                    console.error(
+                        "Erro na pesquisa:",
+                        erro
+                    );
+                }
+            }
+        );
+    }
+
+    /* =========================================================
+       MENU LATERAL
+       ========================================================= */
+
+    function configurarMenu() {
+        if (!menu) return;
+
+        const botoes =
+            menu.querySelectorAll(
+                "button"
+            );
+
+        botoes.forEach(
+            function (botao) {
+                botao.addEventListener(
+                    "click",
+                    function () {
+                        const texto =
+                            botao.textContent
+                                .trim()
+                                .toLowerCase();
+
+                        if (
+                            texto.includes(
+                                "publicar"
+                            )
+                        ) {
+                            abrirPublicacao();
+                            return;
+                        }
+
+                        if (
+                            texto.includes(
+                                "filmes"
+                            )
+                        ) {
+                            filtroAtual =
+                                "filmes";
+
+                            atualizarBotaoMenu(
+                                botao
+                            );
+
+                            carregarConteudos();
+                            return;
+                        }
+
+                        if (
+                            texto.includes(
+                                "séries"
+                            ) ||
+                            texto.includes(
+                                "series"
+                            )
+                        ) {
+                            filtroAtual =
+                                "series";
+
+                            atualizarBotaoMenu(
+                                botao
+                            );
+
+                            carregarConteudos();
+                            return;
+                        }
+
+                        if (
+                            texto.includes(
+                                "favoritos"
+                            )
+                        ) {
+                            filtroAtual =
+                                "favoritos";
+
+                            atualizarBotaoMenu(
+                                botao
+                            );
+
+                            carregarConteudos();
+                            return;
+                        }
+
+                        if (
+                            texto.includes(
+                                "minha biblioteca"
+                            )
+                        ) {
+                            filtroAtual =
+                                "todos";
+
+                            atualizarBotaoMenu(
+                                botao
+                            );
+
+                            carregarConteudos();
+                            return;
+                        }
+
+                        if (
+                            texto.includes(
+                                "minhas vendas"
+                            )
+                        ) {
+                            filtroAtual =
+                                "vendas";
+
+                            atualizarBotaoMenu(
+                                botao
+                            );
+
+                            carregarConteudos();
+                            return;
+                        }
+
+                        if (
+                            texto.includes(
+                                "início"
+                            ) ||
+                            texto.includes(
+                                "inicio"
+                            )
+                        ) {
+                            filtroAtual =
+                                "todos";
+
+                            atualizarBotaoMenu(
+                                botao
+                            );
+
+                            carregarConteudos();
+                        }
+                    }
+                );
+            }
+        );
+    }
+
+    function atualizarBotaoMenu(
+        botaoAtivo
+    ) {
+        if (!menu) return;
+
+        menu.querySelectorAll(
+            "button"
+        ).forEach(
+            function (botao) {
+                botao.classList.remove(
+                    "menu-ativo"
+                );
+            }
+        );
+
+        if (botaoAtivo) {
+            botaoAtivo.classList.add(
+                "menu-ativo"
+            );
+        }
+    }
+
+    /* =========================================================
+       FECHAR MODAIS COM ESC
+       ========================================================= */
+
+    document.addEventListener(
+        "keydown",
+        function (evento) {
+            if (
+                evento.key ===
+                "Escape"
+            ) {
+                fecharDetalhes();
+                fecharPublicacao();
+                fecharPlayer();
+            }
+        }
+    );
+
+    /* =========================================================
+       CLIQUE FORA DOS MODAIS
+       ========================================================= */
+
+    if (modalPublicacao) {
+        modalPublicacao.addEventListener(
+            "click",
+            function (evento) {
+                if (
+                    evento.target ===
+                    modalPublicacao
+                ) {
+                    fecharPublicacao();
+                }
+            }
+        );
+    }
+
+    /* =========================================================
+       BOTÃO VER TODOS
+       ========================================================= */
+
+    const botaoVerTodos =
+        document.querySelector(
+            ".titulo-secao button"
+        );
+
+    if (botaoVerTodos) {
+        botaoVerTodos.addEventListener(
+            "click",
+            function () {
+                filtroAtual = "todos";
+
+                carregarConteudos();
+
+                window.scrollTo({
+                    top: 0,
+                    behavior: "smooth"
+                });
+            }
+        );
+    }
+
+    /* =========================================================
+       INICIALIZAÇÃO
+       ========================================================= */
+
+    async function iniciarAplicacao() {
+        try {
+            console.log(
+                "🎬 Iniciando I.M.A FILMES..."
+            );
+
+            instalarEstiloDetalhes();
+
+            criarModalDetalhes();
+
+            atualizarTipoConteudo();
+
+            atualizarPreco();
+
+            configurarMenu();
+
+            db = await abrirBanco();
+
+            console.log(
+                "✅ IndexedDB conectado."
+            );
+
+            console.log(
+                "📦 Banco:",
+                DB_NAME
+            );
+
+            console.log(
+                "💾 Conteúdos existentes serão preservados."
+            );
+
+            await carregarConteudos();
+
+            console.log(
+                "🎬 I.M.A FILMES carregado com sucesso."
+            );
+
+            console.log(
+                "💎 Modal profissional de detalhes ativo."
+            );
+
+        } catch (erro) {
+            console.error(
+                "Erro ao iniciar I.M.A FILMES:",
+                erro
+            );
+
+            if (listaFilmes) {
+                listaFilmes.innerHTML = `
+                    <div style="
+                        padding:30px;
+                        text-align:center;
+                        color:#ff5555;
+                    ">
+                        ❌ Erro ao iniciar o armazenamento
+                        do I.M.A FILMES.
+                        <br><br>
+                        <small>
+                            Abra o console do navegador
+                            para ver os detalhes do erro.
+                        </small>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    iniciarAplicacao();
+});
