@@ -21,6 +21,9 @@ document.addEventListener("DOMContentLoaded", function () {
     let videoAtual = null;
     let objectUrls = [];
     let detalhesAtual = null;
+    let arquivosSerieSelecionados = [];
+    let formaPagamentoAtual = "multicaixa_express";
+    const COMISSAO_IMA = 0.10;
 
     /* =========================================================
        ELEMENTOS DO HTML
@@ -1140,6 +1143,82 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* =========================================================
+       PUBLICAÇÃO AVANÇADA - SÉRIES / PAGAMENTO / CAPAS
+       ========================================================= */
+
+    function prepararPublicacaoAvancada() {
+        if (!modalPublicacao) return;
+
+        // Campo para selecionar TODOS os episódios de uma só vez.
+        if (listaTemporadas && !document.getElementById("arquivoEpisodiosTodos")) {
+            const caixa = document.createElement("div");
+            caixa.id = "caixaSelecaoEpisodios";
+            caixa.style.cssText = "margin:15px 0;padding:15px;border:1px solid rgba(255,255,255,.15);border-radius:12px;background:rgba(255,255,255,.03);";
+            caixa.innerHTML = `
+                <label style="font-weight:700;display:block;margin-bottom:8px;">🎞️ Episódios da série</label>
+                <p style="font-size:13px;opacity:.8;margin:0 0 10px;">Selecione todos os episódios de uma só vez. Escolha os arquivos na ordem: T1E1, T1E2, T1E3...</p>
+                <input type="file" id="arquivoEpisodiosTodos" accept="video/*" multiple>
+                <div id="resumoEpisodiosSelecionados" style="margin-top:8px;font-size:13px;"></div>
+            `;
+            listaTemporadas.parentNode.insertBefore(caixa, listaTemporadas);
+
+            const input = document.getElementById("arquivoEpisodiosTodos");
+            input.addEventListener("change", function () {
+                arquivosSerieSelecionados = Array.from(input.files || []).filter(f => f.type.startsWith("video/"));
+                const resumo = document.getElementById("resumoEpisodiosSelecionados");
+                if (resumo) resumo.textContent = arquivosSerieSelecionados.length
+                    ? `✅ ${arquivosSerieSelecionados.length} episódio(s) selecionado(s).`
+                    : "Nenhum episódio selecionado.";
+                criarCamposTemporadas();
+            });
+        }
+
+        // Opção de método de pagamento para venda/aluguel.
+        if (precoConteudo && !document.getElementById("formaPagamento")) {
+            const caixaPagamento = document.createElement("div");
+            caixaPagamento.id = "caixaPagamento";
+            caixaPagamento.style.cssText = "margin-top:12px;padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:10px;";
+            caixaPagamento.innerHTML = `
+                <label>💳 Forma de pagamento</label>
+                <select id="formaPagamento">
+                    <option value="multicaixa_express">📱 Multicaixa Express</option>
+                    <option value="transferencia">🏦 Transferência bancária</option>
+                    <option value="carteira_ima">💎 Carteira I.M.A (futura)</option>
+                </select>
+                <small style="display:block;margin-top:6px;opacity:.75;">O pagamento real será confirmado pelo servidor quando o sistema financeiro for conectado.</small>
+            `;
+            areaPreco.parentNode.insertBefore(caixaPagamento, areaPreco.nextSibling);
+            const fp = document.getElementById("formaPagamento");
+            if (fp) fp.addEventListener("change", () => formaPagamentoAtual = fp.value);
+        }
+    }
+
+    function preencherEpisodiosSelecionados() {
+        if (!listaTemporadas || !quantidadeTemporadas || !quantidadeEpisodios) return;
+        const arquivos = arquivosSerieSelecionados || [];
+        const blocos = listaTemporadas.querySelectorAll(".temporada-bloco");
+        let indice = 0;
+        blocos.forEach(function (bloco) {
+            const inputsArquivo = bloco.querySelectorAll(".arquivo-episodio");
+            const inputsNome = bloco.querySelectorAll(".nome-episodio");
+            inputsArquivo.forEach(function (input, j) {
+                const arquivo = arquivos[indice];
+                if (arquivo) {
+                    try {
+                        const dt = new DataTransfer();
+                        dt.items.add(arquivo);
+                        input.files = dt.files;
+                    } catch (e) {}
+                    if (inputsNome[j] && !inputsNome[j].value) {
+                        inputsNome[j].value = arquivo.name.replace(/\.[^/.]+$/, "");
+                    }
+                }
+                indice++;
+            });
+        });
+    }
+
+    /* =========================================================
        TEMPORADAS E EPISÓDIOS
        ========================================================= */
 
@@ -1181,10 +1260,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
             listaTemporadas.appendChild(bloco);
         }
+
+        preencherEpisodiosSelecionados();
     }
 
     if (quantidadeTemporadas) quantidadeTemporadas.addEventListener("input", criarCamposTemporadas);
     if (quantidadeEpisodios) quantidadeEpisodios.addEventListener("input", criarCamposTemporadas);
+
+    prepararPublicacaoAvancada();
 
     /* =========================================================
        PUBLICAR
@@ -1207,6 +1290,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const videoArquivo = arquivoVideo && arquivoVideo.files[0]
                     ? arquivoVideo.files[0]
                     : null;
+                const arquivosSerie = (arquivosSerieSelecionados || []).slice();
 
                 if (!nome) {
                     alert("Digite o nome do conteúdo.");
@@ -1231,6 +1315,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
 
+                if (tipo === "serie" && !arquivosSerie.length) {
+                    alert("Selecione todos os episódios da série de uma só vez.");
+                    return;
+                }
+
                 if (!aceitarRegras || !aceitarRegras.checked) {
                     alert("Você precisa aceitar as regras do I.M.A Filmes.");
                     return;
@@ -1250,11 +1339,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     capaBlob = capaArquivo;
                 } else if (arquivoCapa && arquivoCapa._capaAutomatica) {
                     capaBlob = arquivoCapa._capaAutomatica;
-                } else if (tipo === "filme" && videoArquivo) {
+                } else if (videoArquivo) {
                     try {
                         capaBlob = await gerarCapaDoVideo(videoArquivo, 0.20);
                     } catch (erro) {
                         console.warn("Capa automática falhou:", erro);
+                    }
+                } else if (tipo === "serie" && arquivosSerie[0]) {
+                    try {
+                        capaBlob = await gerarCapaDoVideo(arquivosSerie[0], 0.20);
+                    } catch (erro) {
+                        console.warn("Capa automática da série falhou:", erro);
                     }
                 }
 
@@ -1272,6 +1367,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         ano: Number(ano),
                         acesso: acesso,
                         preco: Number(preco) || 0,
+                        formaPagamento: (document.getElementById("formaPagamento") || {}).value || formaPagamentoAtual,
+                        comissaoIma: COMISSAO_IMA,
+                        vendedor: "Criador local",
                         capa: capaBlob,
                         video: videoArquivo,
                         favorito: false,
@@ -1290,13 +1388,15 @@ document.addEventListener("DOMContentLoaded", function () {
                         ? listaTemporadas.querySelectorAll(".temporada-bloco")
                         : [];
 
+                    let indiceArquivoGlobal = 0;
                     for (let i = 0; i < blocos.length; i++) {
                         const arquivos = blocos[i].querySelectorAll(".arquivo-episodio");
                         const nomes = blocos[i].querySelectorAll(".nome-episodio");
                         const episodios = [];
 
                         for (let j = 0; j < arquivos.length; j++) {
-                            const arquivo = arquivos[j].files[0];
+                            const arquivo = arquivos[j].files[0] || arquivosSerie[indiceArquivoGlobal];
+                            indiceArquivoGlobal++;
 
                             if (!arquivo) continue;
 
@@ -1333,6 +1433,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         ano: Number(ano),
                         acesso: acesso,
                         preco: Number(preco) || 0,
+                        formaPagamento: (document.getElementById("formaPagamento") || {}).value || formaPagamentoAtual,
+                        comissaoIma: COMISSAO_IMA,
+                        vendedor: "Criador local",
                         capa: capaBlob,
                         temporadas: temporadas,
                         favorito: false,
@@ -1369,13 +1472,44 @@ document.addEventListener("DOMContentLoaded", function () {
             arquivoCapa._capaAutomatica = null;
         }
         if (arquivoVideo) arquivoVideo.value = "";
+        const inputTodos = document.getElementById("arquivoEpisodiosTodos");
+        if (inputTodos) inputTodos.value = "";
+        arquivosSerieSelecionados = [];
         if (precoConteudo) precoConteudo.value = "";
+        const fp = document.getElementById("formaPagamento");
+        if (fp) fp.value = "multicaixa_express";
+        formaPagamentoAtual = "multicaixa_express";
         if (aceitarRegras) aceitarRegras.checked = false;
         if (listaTemporadas) listaTemporadas.innerHTML = "";
         if (previewCapa) previewCapa.innerHTML = "Pré-visualização da capa";
 
         atualizarTipoConteudo();
         atualizarPreco();
+    }
+
+    /* =========================================================
+       MINHAS VENDAS - PAINEL LOCAL
+       ========================================================= */
+
+    async function mostrarPainelVendas() {
+        if (!listaFilmes || !db) return;
+        const todos = (await obterConteudos()).map(normalizarConteudo).filter(Boolean);
+        const pagos = todos.filter(c => c.acesso === "venda" || c.acesso === "aluguel");
+        let bruto = 0;
+        pagos.forEach(c => bruto += Number(c.preco || 0) * Number(c.vendas || 0));
+        const comissao = bruto * COMISSAO_IMA;
+        const liquido = bruto - comissao;
+        listaFilmes.innerHTML = `
+            <div style="width:100%;padding:24px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);">
+                <h2>💰 Minhas vendas</h2>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:16px;">
+                    <div><strong>Conteúdos pagos</strong><br>${pagos.length}</div>
+                    <div><strong>Valor bruto</strong><br>${bruto.toFixed(2)} Kz</div>
+                    <div><strong>Comissão I.M.A (10%)</strong><br>${comissao.toFixed(2)} Kz</div>
+                    <div><strong>Saldo do criador</strong><br>${liquido.toFixed(2)} Kz</div>
+                </div>
+                <p style="margin-top:18px;opacity:.8;">📌 Nesta fase os dados de vendas são locais. A confirmação de pagamentos e o levantamento do saldo serão ligados ao servidor posteriormente.</p>
+            </div>`;
     }
 
     /* =========================================================
@@ -1396,6 +1530,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function carregarConteudos() {
         if (!listaFilmes || !db) return;
+
+        if (filtroAtual === "vendas") {
+            await mostrarPainelVendas();
+            return;
+        }
 
         limparURLs();
 
@@ -1502,6 +1641,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 : ""
             }
 
+            ${
+                (conteudo.acesso === "venda" || conteudo.acesso === "aluguel") && !conteudo.comprado
+                ? `<button class="botao-comprar" title="Comprar / alugar" style="width:100%;margin:8px 0;padding:10px;border:0;border-radius:10px;cursor:pointer;">🛒 ${conteudo.acesso === "aluguel" ? "Alugar" : "Comprar"} • ${Number(conteudo.preco || 0).toFixed(2)} Kz</button>`
+                : ""
+            }
+
             <div class="botoes">
                 <button class="botao-play" title="Assistir">▶️</button>
                 <button class="botao-detalhes" title="Detalhes">ℹ️</button>
@@ -1522,10 +1667,46 @@ document.addEventListener("DOMContentLoaded", function () {
         if (titulo) titulo.addEventListener("click", function () { abrirDetalhes(conteudo); });
         if (detalhes) detalhes.addEventListener("click", function () { abrirDetalhes(conteudo); });
 
+        const botaoComprar = card.querySelector(".botao-comprar");
+
+        if (botaoComprar) {
+            botaoComprar.addEventListener("click", async function () {
+                const metodo = conteudo.formaPagamento === "transferencia"
+                    ? "Transferência bancária"
+                    : conteudo.formaPagamento === "carteira_ima"
+                        ? "Carteira I.M.A"
+                        : "Multicaixa Express";
+
+                const ok = confirm(
+                    `🛒 ${conteudo.acesso === "aluguel" ? "Aluguel" : "Compra"} de "${conteudo.nome}"\n\n` +
+                    `Valor: ${Number(conteudo.preco || 0).toFixed(2)} Kz\n` +
+                    `Método: ${metodo}\n\n` +
+                    `MODO DE DEMONSTRAÇÃO: nenhum dinheiro será cobrado nesta versão.\n\n` +
+                    `Continuar?`
+                );
+
+                if (!ok) return;
+
+                conteudo.comprado = true;
+                conteudo.vendas = Number(conteudo.vendas || 0) + 1;
+                conteudo.valorUltimaVenda = Number(conteudo.preco || 0);
+                conteudo.dataUltimaVenda = Date.now();
+                await atualizarConteudo(conteudo);
+
+                alert("✅ Acesso liberado nesta versão de demonstração.\n\nNo sistema real, o pagamento será confirmado pelo servidor.");
+                await carregarConteudos();
+            });
+        }
+
         const botaoPlay = card.querySelector(".botao-play");
 
         if (botaoPlay) {
             botaoPlay.addEventListener("click", function () {
+                const pago = conteudo.acesso === "venda" || conteudo.acesso === "aluguel";
+                if (pago && !conteudo.comprado) {
+                    alert("🔒 Este conteúdo é pago. Clique em Comprar/Alugar primeiro.");
+                    return;
+                }
                 if (conteudo.tipo === "filme") {
                     reproduzirFilme(conteudo);
                 } else {
@@ -1556,6 +1737,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (botaoDownload) {
             botaoDownload.addEventListener("click", function () {
+                const pago = conteudo.acesso === "venda" || conteudo.acesso === "aluguel";
+                if (pago && !conteudo.comprado) {
+                    alert("🔒 Faça a compra/aluguel para liberar o download.");
+                    return;
+                }
                 if (conteudo.tipo === "filme") {
                     baixarVideo(conteudo.video, conteudo.nome);
                 } else {
@@ -1930,6 +2116,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             atualizarTipoConteudo();
             atualizarPreco();
+            prepararPublicacaoAvancada();
             configurarMenu();
 
             await carregarConteudos();
