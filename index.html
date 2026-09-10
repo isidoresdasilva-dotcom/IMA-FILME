@@ -1,25 +1,103 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>I.M.A Filmes</title><link rel="stylesheet" href="style.css">
-</head><body>
-<header class="topo"><div class="logo">🎬 I.M.A <span>FILMES</span></div><div class="pesquisa">🔎<input type="text" id="campoPesquisa" placeholder="Pesquisar filmes e séries..."></div><div class="acoes"><button title="Notificações">🔔</button><button title="Configurações">⚙️</button><button class="perfil" title="Perfil">👤</button></div></header>
-<div class="estrutura"><aside class="menu">
-<button class="menu-ativo">🏠 Início</button><button>🎬 Filmes</button><button>📺 Séries</button><button>⭐ Favoritos</button><hr>
-<button class="enviar" id="botaoEnviarMenu">📤 Publicar conteúdo</button><button>🗂️ Minha Biblioteca</button><button>🛒 Minhas compras</button><button>💰 Minhas vendas</button><div class="espaco"></div><button>⚙️ Configurações</button><button>🔐 Administrador</button>
-</aside>
-<main class="conteudo"><section class="banner"><div><p class="pequeno">BEM-VINDO AO</p><h1>I.M.A FILMES</h1><p>A plataforma para assistir, publicar e futuramente vender filmes e séries.</p><button class="botao-principal" id="botaoEnviar">📤 Publicar meu conteúdo</button></div></section>
-<div class="titulo-secao"><h2>🎬 Minha Biblioteca</h2><button>Ver todos →</button></div><section class="filmes" id="listaFilmes"><article class="card"><div class="capa capa1">🎬</div><h3>Meu Filme</h3><p>Filme • 2026</p><div class="botoes"><button>▶️</button><button>⬇️</button><button>🔗</button></div></article><article class="card"><div class="capa capa2">📺</div><h3>Minha Série</h3><p>Série • Temporada 1</p><div class="botoes"><button>▶️</button><button>⬇️</button><button>🔗</button></div></article></section></main></div>
-<div class="modal" id="modalPublicacao"><div class="modal-conteudo"><div class="modal-cabecalho"><h2>📤 Publicar conteúdo</h2><button id="fecharModal" class="fechar">✕</button></div><p class="subtitulo">Preencha as informações do seu filme ou série.</p>
-<label>Tipo de conteúdo</label><select id="tipoConteudo"><option value="filme">🎬 Filme</option><option value="serie">📺 Série</option></select>
-<label>🖼️ Capa</label><input type="file" id="arquivoCapa" accept="image/*"><div id="previewCapa" class="preview-capa">Pré-visualização da capa</div>
-<label>🎬 Nome do conteúdo</label><input type="text" id="nomeConteudo" placeholder="Digite o nome do filme ou série"><label>📝 Descrição</label><textarea id="descricaoConteudo" rows="5" placeholder="Escreva uma descrição do filme ou série..."></textarea>
-<label>📅 Ano</label><input type="number" id="anoConteudo" placeholder="2026" min="1900" max="2100">
-<div id="areaSerie" class="area-serie"><h3>📺 Informações da série</h3><label>📚 Quantidade de temporadas</label><input type="number" id="quantidadeTemporadas" min="1" placeholder="Ex.: 3"><label>🎞️ Quantidade de episódios por temporada</label><input type="number" id="quantidadeEpisodios" min="1" placeholder="Ex.: 24"><div id="listaTemporadas" class="lista-temporadas"></div></div>
-<div id="areaVideo"><label>🎥 Vídeo do conteúdo</label><input type="file" id="arquivoVideo" accept="video/*"><small>Envie somente vídeos que você possui ou tem autorização para distribuir.</small></div>
-<label>💰 Tipo de acesso</label><select id="tipoAcesso"><option value="gratis">🆓 Gratuito</option><option value="venda">💰 Venda</option><option value="aluguel">🎟️ Aluguel</option></select><div id="areaPreco" style="display:none;"><label>💵 Preço</label><input type="number" id="precoConteudo" min="0" step="0.01" placeholder="Preço em Kz"></div>
-<div class="aviso-conteudo">⚠️ <strong>Regras do I.M.A Filmes</strong><p>Não é permitido publicar pornografia, conteúdo ilegal ou material que viole direitos autorais.</p></div><label class="check"><input type="checkbox" id="aceitarRegras"> Confirmo que tenho direito de publicar este conteúdo e aceito as regras da plataforma.</label>
-<div class="acoes-formulario"><button id="cancelarPublicacao" class="botao-cancelar">Cancelar</button><button id="salvarPublicacao" class="botao-salvar">🚀 Publicar</button></div></div></div>
-<div id="modalPlayer" class="modal-player"><div class="player-conteudo"><button id="fecharPlayer" class="fechar-player">✕</button><video id="videoPlayer" controls></video><h2 id="tituloPlayer">Filme</h2><p id="descricaoPlayer"></p></div></div>
-<script src="app.js"></script></body></html>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>I.M.A FILMES — Filmes, Séries e E-books</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">🎬 <span>I.M.A</span> FILMES</div>
+    <div class="search-wrap"><input id="search" placeholder="Pesquisar filmes, séries e e-books..."></div>
+    <div class="top-actions">
+      <button id="btnLogin" class="icon-btn">👤 <span>Conta</span></button>
+      <button id="btnAdmin" class="icon-btn">🔐</button>
+    </div>
+  </header>
+
+  <div class="app">
+    <aside class="sidebar">
+      <button data-view="home" class="nav active">🏠 Início</button>
+      <button data-view="movies" class="nav">🎬 Filmes</button>
+      <button data-view="series" class="nav">📺 Séries</button>
+      <button data-view="ebooks" class="nav">📚 I.M.A E-books</button>
+      <button data-view="showcase" class="nav">📣 Vitrine I.M.A</button>
+      <div class="nav-sep"></div>
+      <button data-action="publish" class="nav">➕ Publicar conteúdo</button>
+      <button data-view="purchases" class="nav">🛒 Minhas compras</button>
+      <button data-view="sales" class="nav">💰 Minhas vendas</button>
+      <button data-view="admin" class="nav">⚙️ Administrador</button>
+      <div class="sidebar-footer">I.M.A FILMES V6<br><small>Protótipo local</small></div>
+    </aside>
+
+    <main class="content">
+      <section id="hero" class="hero">
+        <div class="hero-content">
+          <span class="eyebrow">PLATAFORMA DIGITAL I.M.A</span>
+          <h1>Filmes, séries, anime, dorama e e-books em um só lugar.</h1>
+          <p>Publique, venda e divulgue os seus conteúdos com uma vitrine cinematográfica.</p>
+          <div class="hero-actions">
+            <button class="btn primary" data-view="showcase">🔥 Ver Vitrine</button>
+            <button class="btn ghost" data-action="publish">➕ Publicar agora</button>
+          </div>
+        </div>
+        <div class="hero-collage" aria-hidden="true">
+          <div class="poster p1">FILME</div><div class="poster p2">SÉRIE</div>
+          <div class="poster p3">ANIME</div><div class="poster p4">DORAMA</div>
+          <div class="poster p5">E-BOOK</div>
+        </div>
+      </section>
+
+      <section id="homeView" class="view">
+        <div class="section-title"><div><span class="eyebrow">DESTAQUES</span><h2>Escolhas da I.M.A</h2></div><button class="link-btn" data-view="showcase">Ver tudo →</button></div>
+        <div id="homeGrid" class="grid"></div>
+        <div class="section-title compact"><div><span class="eyebrow">CATÁLOGO</span><h2>Novidades</h2></div></div>
+        <div id="newGrid" class="grid"></div>
+      </section>
+
+      <section id="catalogView" class="view hidden">
+        <div class="section-title"><div><span class="eyebrow" id="catalogEyebrow">CATÁLOGO</span><h2 id="catalogTitle">Conteúdos</h2></div></div>
+        <div id="catalogGrid" class="grid"></div>
+      </section>
+
+      <section id="showcaseView" class="view hidden">
+        <div class="section-title"><div><span class="eyebrow">PUBLICIDADE I.M.A</span><h2>Vitrine em destaque</h2></div></div>
+        <div class="promo-plans">
+          <div class="plan"><b>7 DIAS</b><strong>500 Kz</strong><span>Promoção básica</span></div>
+          <div class="plan featured"><b>14 DIAS</b><strong>1.000 Kz</strong><span>Mais alcance e duração</span></div>
+        </div>
+        <p class="notice">Somente o administrador pode ativar uma promoção. O interessado solicita o plano e o pagamento é confirmado pelo administrador.</p>
+        <div id="promoGrid" class="grid"></div>
+      </section>
+
+      <section id="purchasesView" class="view hidden">
+        <div class="section-title"><div><span class="eyebrow">ÁREA DO CLIENTE</span><h2>Minhas compras</h2></div></div>
+        <div id="purchaseGrid" class="grid"></div>
+      </section>
+
+      <section id="salesView" class="view hidden">
+        <div class="section-title"><div><span class="eyebrow">CRIADOR</span><h2>Minhas vendas</h2></div></div>
+        <div id="salesStats" class="stats"></div>
+        <div id="salesGrid" class="grid"></div>
+      </section>
+
+      <section id="adminView" class="view hidden">
+        <div class="section-title"><div><span class="eyebrow">CONTROLO</span><h2>Administrador</h2></div></div>
+        <div id="adminStats" class="stats"></div>
+        <div class="admin-box"><h3>Pedidos de promoção</h3><div id="adminPromos"></div></div>
+        <div class="admin-box"><h3>Conteúdos publicados</h3><div id="adminContents"></div></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <button class="close" id="closeModal">✕</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
