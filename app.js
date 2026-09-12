@@ -190,3 +190,7 @@ document.getElementById("closeModal").onclick=closeModal;
 document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()});
 document.getElementById("search").addEventListener("input",render);
 openDB().then(seed).then(render).catch(e=>alert("Erro ao iniciar o armazenamento: "+e.message));
+
+
+// V7 startup recovery
+setTimeout(()=>migrarVideosAntigos(), 700);
