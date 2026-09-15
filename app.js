@@ -1,196 +1,71 @@
-const DB="IMA_FILMES_DB_V6", VER=1;
-const stores=["conteudos","ebooks","promocoes","usuarios","transacoes"];
-let db, currentUser=null, currentView="home", selectedCover=0;
-
-function uid(){return crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(16).slice(2)}
-function esc(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,VER);r.onupgradeneeded=()=>{db=r.result;stores.forEach(s=>{if(!db.objectStoreNames.contains(s))db.createObjectStore(s,{keyPath:"id"})})};r.onsuccess=()=>{db=r.result;res(db)};r.onerror=()=>rej(r.error)})}
-function tx(store,mode="readonly"){return db.transaction(store,mode).objectStore(store)}
-function all(store){return new Promise((res,rej)=>{const r=tx(store).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error)})}
-function put(store,obj){return new Promise((res,rej)=>{const r=tx(store,"readwrite").put(obj);r.onsuccess=()=>res(obj);r.onerror=()=>rej(r.error)})}
-function remove(store,id){return new Promise((res,rej)=>{const r=tx(store,"readwrite").delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
-function get(store,id){return new Promise((res,rej)=>{const r=tx(store).get(id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
-
-function fileToDataURL(file){return new Promise((res,rej)=>{if(!file)return res("");const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>rej(fr.error);fr.readAsDataURL(file)})}
-async function autoCovers(file,name){
-  if(!file)return Array.from({length:5},(_,i)=>({label:"Capa "+(i+1),style:i}));
-  const url=URL.createObjectURL(file), v=document.createElement("video");
-  v.src=url;v.muted=true;v.preload="metadata";
-  await new Promise(r=>{v.onloadedmetadata=()=>r();v.onerror=()=>r()});
-  const duration=isFinite(v.duration)?v.duration:60, points=[.05,.2,.4,.6,.8], out=[];
-  for(let i=0;i<5;i++){
-    const t=Math.max(0,Math.min(duration-.1,duration*points[i]));
-    await new Promise(r=>{v.currentTime=t;v.onseeked=()=>r()});
-    const c=document.createElement("canvas");c.width=640;c.height=360;c.getContext("2d").drawImage(v,0,0,c.width,c.height);
-    out.push({label:`Capa ${i+1}`,data:c.toDataURL("image/jpeg",.72),style:i});
+const C=window.IMA_CONFIG||{};const APP='I.M.A FILMES V9';const ONLINE=!!(window.supabase&&C.SUPABASE_URL&&C.SUPABASE_ANON_KEY&&!C.SUPABASE_URL.includes('COLOQUE_AQUI'));const sb=ONLINE?supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY):null;
+const BLOCKED=['pornografia','pornô','porno','porn','xxx','sexo explícito','sex explicit','nudez explícita'];let state={user:null,profile:null,view:'home',query:'',contents:[],favorites:new Set(),progress:new Map(),transactions:[],local:false};let localDB;
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+function toast(t){const x=$('#toast');x.textContent=t;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),3000)}function isBlocked(t){return BLOCKED.some(w=>String(t).toLowerCase().includes(w))}function uid(){return crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random()}
+function fallbackCover(title,n=0){const c=document.createElement('canvas');c.width=640;c.height=360;const g=c.getContext('2d');g.fillStyle=['#172554','#164e63','#334155','#3f3f46','#111827'][n%5];g.fillRect(0,0,640,360);g.fillStyle='#fff';g.font='bold 34px Arial';g.fillText('🎬 I.M.A FILMES',30,80);g.font='bold 25px Arial';g.fillText(String(title).slice(0,30),30,145);g.font='16px Arial';g.fillText('Capa automática '+(n+1),30,185);return c.toDataURL('image/jpeg',.84)}
+function autoCovers(file,title){return new Promise(resolve=>{const fallback=[0,1,2,3,4].map(i=>fallbackCover(title,i));if(!file||!file.type.startsWith('video/'))return resolve(fallback);const v=document.createElement('video');v.muted=true;v.preload='metadata';v.src=URL.createObjectURL(file);v.onloadedmetadata=()=>{const d=isFinite(v.duration)?v.duration:10,times=[.05,.2,.4,.6,.8].map(p=>Math.max(.1,Math.min(d-.1,d*p))),out=[],c=document.createElement('canvas');c.width=640;c.height=360;let i=0;v.onseeked=()=>{try{c.getContext('2d').drawImage(v,0,0,640,360);out.push(c.toDataURL('image/jpeg',.84));i++;if(i<times.length)v.currentTime=times[i];else{URL.revokeObjectURL(v.src);resolve(out)}}catch{resolve(fallback)}};v.currentTime=times[0]};v.onerror=()=>resolve(fallback)})}
+function fileData(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+function blobFromData(data){if(data instanceof Blob)return data;if(typeof data!=='string')return null;const [head,b64]=data.split(',');if(!b64)return null;const mime=(head.match(/data:([^;]+)/)||[])[1]||'application/octet-stream';const bin=atob(b64),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:mime})}
+function localOpen(){return new Promise((res,rej)=>{const r=indexedDB.open('IMA_FILMES_DB_V9_LOCAL',1);r.onupgradeneeded=e=>{const d=e.target.result;['contents','users','favorites','progress','transactions'].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id',autoIncrement:true})})};r.onsuccess=()=>{localDB=r.result;res()};r.onerror=()=>rej(r.error)})}function lg(store,mode='readonly'){return localDB.transaction(store,mode).objectStore(store)}function lget(store){return new Promise((r,j)=>{const q=lg(store).getAll();q.onsuccess=()=>r(q.result||[]);q.onerror=()=>j(q.error)})}function lput(store,o){return new Promise((r,j)=>{const q=lg(store,'readwrite').put(o);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}function ldel(store,id){return new Promise((r,j)=>{const q=lg(store,'readwrite').delete(id);q.onsuccess=()=>r();q.onerror=()=>j(q.error)})}
+async function localLogin(name,email,password){let us=await lget('users'),u=us.find(x=>x.email===email);if(u&&u.password!==password)throw Error('Senha incorreta.');if(!u){u={id:uid(),name,email,password,role:'user',createdAt:Date.now()};await lput('users',u)}state.user={id:u.id,email:u.email};state.profile=u}
+async function initAuth(){if(ONLINE){const {data:{session}}=await sb.auth.getSession();if(session)await loadProfile(session.user);sb.auth.onAuthStateChange(async(_e,s)=>{if(s)await loadProfile(s.user);else{state.user=null;state.profile=null;render()}})}else{await localOpen();const id=localStorage.getItem('ima_v9_local_user');if(id){const u=(await lget('users')).find(x=>x.id===id);if(u){state.user={id:u.id,email:u.email};state.profile=u}}}}
+async function loadProfile(user){state.user=user;let {data,error}=await sb.from('profiles').select('*').eq('id',user.id).single();if(error)console.warn(error);state.profile=data||{id:user.id,name:user.user_metadata?.name||user.email,role:'user'};render()}
+async function loadData(){if(ONLINE){const [{data:c},{data:f},{data:p},{data:t}]=await Promise.all([sb.from('contents').select('*,profiles:owner_id(name)'),state.user?sb.from('favorites').select('content_id').eq('user_id',state.user.id):Promise.resolve({data:[]}),state.user?sb.from('progress').select('*').eq('user_id',state.user.id):Promise.resolve({data:[]}),state.user?sb.from('transactions').select('*,contents(title)').or(`buyer_id.eq.${state.user.id},seller_id.eq.${state.user.id}`):Promise.resolve({data:[]})]);state.contents=c||[];state.favorites=new Set((f||[]).map(x=>x.content_id));state.progress=new Map((p||[]).map(x=>[x.content_id,x]));state.transactions=t||[]}else{state.contents=await lget('contents');const f=state.user?await lget('favorites'):[];state.favorites=new Set(f.filter(x=>x.userId===state.user?.id).map(x=>x.contentId));const p=state.user?await lget('progress'):[];state.progress=new Map(p.filter(x=>x.userId===state.user?.id).map(x=>[x.contentId,x]));state.transactions=await lget('transactions')}}
+function nav(v){state.view=v;$('#sidebar').classList.remove('open');render()}
+function filtered(kind){let a=state.contents.filter(x=>x.status!=='removed');if(kind==='films')a=a.filter(x=>x.type==='Filme');if(kind==='series')a=a.filter(x=>x.type==='Série');if(kind==='ebooks')a=a.filter(x=>x.type==='E-book');if(kind==='favorites')a=a.filter(x=>state.favorites.has(x.id));if(state.query){const q=state.query.toLowerCase();a=a.filter(x=>(x.title+' '+(x.description||'')).toLowerCase().includes(q))}return a}
+function card(x){const fav=state.favorites.has(x.id),p=state.progress.get(x.id),pct=p&&p.duration?Math.min(100,p.seconds/p.duration*100):0;return `<article class="card"><img class="cover" src="${esc(x.cover_url||x.cover||fallbackCover(x.title,0))}" alt="Capa"><div class="cardbody"><h3>${esc(x.title)}</h3><div class="meta">${esc(x.type)} • ${esc(x.year||new Date(x.created_at||Date.now()).getFullYear())}${x.ownerName||x.profiles?.name?' • '+esc(x.ownerName||x.profiles.name):''}</div><p class="desc">${esc(x.description||'Sem descrição.')}</p><span class="tag">${x.free||Number(x.price||0)===0?'Grátis':Number(x.price).toLocaleString('pt-AO')+' Kz'}</span>${pct?`<div class="progressbar"><span style="width:${pct}%"></span></div>`:''}<div class="actions"><button data-play="${x.id}">▶️</button><button data-fav="${x.id}">${fav?'💔':'❤️'}</button><button data-dl="${x.id}">⬇️</button><button data-share="${x.id}">🔗</button></div></div></article>`}
+function empty(t){return `<div class="empty" style="grid-column:1/-1">${t}</div>`}function bind(){ $$('[data-play]').forEach(b=>b.onclick=()=>play(b.dataset.play));$$('[data-fav]').forEach(b=>b.onclick=()=>toggleFav(b.dataset.fav));$$('[data-dl]').forEach(b=>b.onclick=()=>download(b.dataset.dl));$$('[data-share]').forEach(b=>b.onclick=()=>share(b.dataset.share))}
+function homePage(){const a=filtered();$('#main').innerHTML=`<section class="hero"><h1>BEM-VINDO AO I.M.A FILMES</h1><p>A plataforma para assistir, publicar e futuramente vender filmes e séries.</p><p class="small">${ONLINE?'☁️ Modo online ativo':'💾 Modo local ativo — configure o Supabase para publicar online'}</p><button class="primary" id="goPub">Publicar meu conteúdo</button></section><div class="sectionhead"><h2>Conteúdos em destaque</h2><span class="meta">${a.length} item(ns)</span></div><div class="grid">${a.slice(0,12).map(card).join('')||empty('Ainda não há conteúdos.')}</div>`;$('#goPub').onclick=()=>nav('publish');bind()}
+function catalog(kind){const names={films:'Filmes',series:'Séries',ebooks:'E-books',favorites:'Favoritos'};const a=filtered(kind);$('#main').innerHTML=`<div class="sectionhead"><h1>${names[kind]}</h1><span class="meta">${a.length} item(ns)</span></div><div class="grid">${a.map(card).join('')||empty('Nenhum conteúdo encontrado.')}</div>`;bind()}
+async function publishPage(){
+  if(!state.user){
+    $('#main').innerHTML=`<div class="panel"><h2>🔐 Entre para publicar</h2><p>Crie uma conta para publicar conteúdo.</p><button class="primary" id="loginNow">Entrar / Criar conta</button></div>`;
+    $('#loginNow').onclick=login;
+    return;
   }
-  URL.revokeObjectURL(url);return out
-}
-function coverHtml(item){
-  if(item.cover)return `<div class="cover"><img src="${item.cover}" alt=""><span class="tag">${esc(item.kind)}</span>${item.price>0?`<span class="price">${Number(item.price).toLocaleString("pt-AO")} Kz`:`<span class="price">GRÁTIS</span>`}</div>`;
-  const n=esc(item.title||item.name||"Conteúdo");
-  return `<div class="cover"><div class="cover-art">${n}</div><span class="tag">${esc(item.kind||"Conteúdo")}</span>${item.price>0?`<span class="price">${Number(item.price).toLocaleString("pt-AO")} Kz`:`<span class="price">GRÁTIS</span>`}</div>`
-}
-function card(item){
-  const isBook=item.kind==="E-book", bought=item.free||item.price<=0;
-  return `<article class="card">${coverHtml(item)}<div class="card-body"><h3>${esc(item.title||item.name)}</h3><div class="meta">${esc(item.description||"Conteúdo publicado na I.M.A FILMES.")}</div><div class="card-actions"><button class="mini-btn primary" onclick="details('${item.id}','${isBook?'ebook':'content'}')">Ver</button>${!bought?`<button class="mini-btn" onclick="buy('${item.id}','${isBook?'ebook':'content'}')">Comprar</button>`:""}</div></div></article>`
-}
-async function render(){
-  const q=document.getElementById("search").value.trim().toLowerCase();
-  const contents=await all("conteudos"), books=(await all("ebooks")).map(x=>({...x,kind:"E-book"}));
-  const combined=[...contents,...books].filter(x=>!q||(x.title||x.name||"").toLowerCase().includes(q)||(x.description||"").toLowerCase().includes(q));
-  document.getElementById("homeGrid").innerHTML=combined.slice(0,6).map(card).join("")||empty("Ainda não há conteúdos publicados.");
-  document.getElementById("newGrid").innerHTML=combined.slice(-6).reverse().map(card).join("")||empty("Publique o primeiro conteúdo.");
-  await renderView(combined)
-}
-function empty(t){return `<div class="notice" style="grid-column:1/-1">${t}</div>`}
-async function renderView(combined){
-  const sections={movies:"catalogView",series:"catalogView",ebooks:"catalogView"};
-  ["homeView","catalogView","showcaseView","purchasesView","salesView","adminView"].forEach(id=>document.getElementById(id).classList.add("hidden"));
-  if(currentView==="home"){document.getElementById("homeView").classList.remove("hidden");return}
-  if(currentView==="movies"||currentView==="series"||currentView==="ebooks"){
-    document.getElementById("catalogView").classList.remove("hidden");
-    const title={movies:"Filmes",series:"Séries",ebooks:"I.M.A E-books"}[currentView];
-    document.getElementById("catalogTitle").textContent=title;document.getElementById("catalogEyebrow").textContent="CATÁLOGO";
-    const arr=combined.filter(x=>currentView==="ebooks"?x.kind==="E-book":currentView==="movies"?x.kind==="Filme":x.kind==="Série");
-    document.getElementById("catalogGrid").innerHTML=arr.map(card).join("")||empty("Nenhum conteúdo nesta categoria.");
+  $('#main').innerHTML=`<div class="sectionhead"><h1>Publicar conteúdo</h1></div><div class="panel"><div class="notice">⚠️ O filtro bloqueia termos explícitos no título/descrição. Para moderação real do vídeo é necessário processamento no servidor.</div><form id="pub" class="form"><div class="row"><div><label>Tipo</label><select id="type"><option>Filme</option><option>Série</option><option>E-book</option></select></div><div><label>Preço (Kz)</label><input id="price" type="number" min="0" value="0"></div></div><label>Título</label><input id="title" required><label>Descrição</label><textarea id="desc"></textarea><div id="seriesBox" style="display:none"><label>Número de temporadas</label><input id="seasons" type="number" min="1" value="1"><label>Vídeos dos episódios</label><input id="episodeFiles" type="file" accept="video/*" multiple></div><label>Capa manual (opcional)</label><input id="cover" type="file" accept="image/*"><div id="coverOptions"></div><label id="videoLabel">Vídeo</label><input id="video" type="file" accept="video/*"><label>E-book PDF/EPUB (opcional)</label><input id="book" type="file" accept="application/pdf,.pdf,.epub"><button class="primary">Publicar na nuvem</button></form></div>`;
+  $('#type').onchange=e=>{
+    const s=e.target.value==='Série';
+    $('#seriesBox').style.display=s?'block':'none';
+    $('#video').style.display=s?'none':'block';
+    $('#videoLabel').style.display=s?'none':'block';
+  };
+  let covers=[],chosen='';
+  $('#video').onchange=async e=>{covers=await autoCovers(e.target.files[0],$('#title').value||'I.M.A FILMES');showCovers()};
+  $('#title').oninput=async()=>{if($('#video').files[0]){covers=await autoCovers($('#video').files[0],$('#title').value||'I.M.A FILMES');showCovers()}};
+  function showCovers(){
+    $('#coverOptions').innerHTML='<label>Escolha uma das 5 capas automáticas</label><div class="cover-options">'+covers.map((c,i)=>`<img src="${c}" data-ci="${i}">`).join('')+'</div>';
+    chosen=covers[0]||'';
+    $$('#coverOptions img').forEach((im,i)=>im.onclick=()=>{chosen=covers[i];$$('#coverOptions img').forEach(z=>z.classList.remove('selected'));im.classList.add('selected')});
+    $('#coverOptions img')?.classList.add('selected');
   }
-  if(currentView==="showcase")await renderShowcase();
-  if(currentView==="purchases")await renderPurchases();
-  if(currentView==="sales")await renderSales();
-  if(currentView==="admin")await renderAdmin();
+  $('#pub').onsubmit=async e=>{
+    e.preventDefault();
+    const type=$('#type').value,title=$('#title').value.trim(),desc=$('#desc').value.trim();
+    if(isBlocked(title+' '+desc))return toast('❌ Conteúdo não permitido.');
+    try{
+      const price=Number($('#price').value)||0,coverFile=$('#cover').files[0],book=$('#book').files[0],coverData=coverFile?await fileData(coverFile):chosen||fallbackCover(title,0);
+      if(ONLINE)await publishOnline({type,title,desc,price,coverFile,coverData,book});
+      else await publishLocal({type,title,desc,price,coverFile,coverData,book});
+      toast('✅ Conteúdo publicado.');
+      nav(type==='Filme'?'films':type==='Série'?'series':'ebooks');
+    }catch(err){console.error(err);toast('❌ '+(err.message||'Falha ao publicar.'));}
+  };
 }
-async function renderShowcase(){
-  document.getElementById("showcaseView").classList.remove("hidden");
-  const promos=await all("promocoes"), now=Date.now();
-  const active=promos.filter(p=>p.status==="active"&&p.end>now);
-  const contents=[...(await all("conteudos")),...(await all("ebooks")).map(x=>({...x,kind:"E-book"}))];
-  const arr=active.map(p=>contents.find(c=>c.id===p.contentId)).filter(Boolean);
-  document.getElementById("promoGrid").innerHTML=arr.map(card).join("")||empty("A vitrine está pronta. O administrador ainda não ativou promoções.");
-}
-async function renderPurchases(){
-  document.getElementById("purchasesView").classList.remove("hidden");
-  const user=currentUser||{id:"demo"};
-  const ts=(await all("transacoes")).filter(t=>t.userId===user.id&&t.type==="purchase");
-  const contents=[...(await all("conteudos")),...(await all("ebooks")).map(x=>({...x,kind:"E-book"}))];
-  document.getElementById("purchaseGrid").innerHTML=ts.map(t=>contents.find(c=>c.id===t.contentId)).filter(Boolean).map(card).join("")||empty("As suas compras aparecerão aqui.");
-}
-async function renderSales(){
-  document.getElementById("salesView").classList.remove("hidden");
-  if(!currentUser){document.getElementById("salesGrid").innerHTML=empty("Entre como criador para ver as suas vendas.");document.getElementById("salesStats").innerHTML="";return}
-  const mine=[...(await all("conteudos")),...(await all("ebooks"))].filter(x=>x.ownerId===currentUser.id);
-  const sales=(await all("transacoes")).filter(t=>t.type==="purchase"&&mine.some(m=>m.id===t.contentId));
-  const gross=sales.reduce((a,b)=>a+Number(b.amount||0),0), commission=gross*.10;
-  document.getElementById("salesStats").innerHTML=`<div class="stat"><small>Conteúdos</small><strong>${mine.length}</strong></div><div class="stat"><small>Vendas</small><strong>${sales.length}</strong></div><div class="stat"><small>Bruto</small><strong>${gross.toLocaleString("pt-AO")} Kz</strong></div><div class="stat"><small>Saldo do criador</small><strong>${(gross-commission).toLocaleString("pt-AO")} Kz</strong></div>`;
-  document.getElementById("salesGrid").innerHTML=mine.map(card).join("")||empty("Você ainda não publicou conteúdos.");
-}
-async function renderAdmin(){
-  document.getElementById("adminView").classList.remove("hidden");
-  if(!currentUser||currentUser.role!=="admin"){document.getElementById("adminStats").innerHTML=empty("Acesso reservado ao administrador.");document.getElementById("adminPromos").innerHTML="";document.getElementById("adminContents").innerHTML="";return}
-  const c=await all("conteudos"),e=await all("ebooks"),p=await all("promocoes"),u=await all("usuarios");
-  document.getElementById("adminStats").innerHTML=`<div class="stat"><small>Filmes/Séries</small><strong>${c.length}</strong></div><div class="stat"><small>E-books</small><strong>${e.length}</strong></div><div class="stat"><small>Usuários</small><strong>${u.length}</strong></div><div class="stat"><small>Promoções ativas</small><strong>${p.filter(x=>x.status==="active"&&x.end>Date.now()).length}</strong></div>`;
-  document.getElementById("adminPromos").innerHTML=p.map(x=>`<div class="admin-row"><span>${esc(x.contentTitle)} — ${x.days} dias — ${Number(x.price).toLocaleString("pt-AO")} Kz<br><small>Status: ${esc(x.status)}</small></span>${x.status==="pending"?`<button class="mini-btn primary" onclick="activatePromo('${x.id}')">Confirmar pagamento</button>`:""}</div>`).join("")||"<p class='login-note'>Sem pedidos.</p>";
-  document.getElementById("adminContents").innerHTML=[...c,...e].map(x=>`<div class="admin-row"><span><b>${esc(x.title||x.name)}</b> — ${esc(x.kind||"E-book")}</span><span>${x.price>0?Number(x.price).toLocaleString("pt-AO")+" Kz":"Grátis"}</span></div>`).join("")||"<p class='login-note'>Sem conteúdos.</p>"
-}
-function setView(v){currentView=v;document.querySelectorAll(".nav[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));render()}
-function modal(html){document.getElementById("modalBody").innerHTML=html;document.getElementById("modal").classList.remove("hidden")}
-function closeModal(){document.getElementById("modal").classList.add("hidden")}
-function auth(){
-  modal(`<h2>Entrar / criar conta</h2><p class="login-note">Conta local do protótipo. Para produção, teremos autenticação segura no servidor.</p><div class="form-grid"><div class="field full"><label>E-mail</label><input id="email" type="email" placeholder="voce@email.com"></div><div class="field"><label>Senha</label><input id="pass" type="password"></div><div class="field"><label>Perfil</label><select id="role"><option value="cliente">Cliente</option><option value="criador">Criador</option><option value="admin">Administrador (demo)</option></select></div></div><div class="form-actions"><button class="btn primary" onclick="login()">Entrar / criar</button></div>`)
-}
-async function login(){
-  const email=document.getElementById("email").value.trim().toLowerCase(), pass=document.getElementById("pass").value, role=document.getElementById("role").value;
-  if(!email||!pass)return alert("Preencha e-mail e senha.");
-  let users=await all("usuarios"),u=users.find(x=>x.email===email);
-  if(!u){u={id:uid(),email,pass,role};await put("usuarios",u)}
-  else if(u.pass!==pass)return alert("Senha incorreta.");
-  currentUser=u;closeModal();alert("Sessão iniciada como "+u.role);render()
-}
-function publish(){
-  if(!currentUser){auth();return}
-  if(currentUser.role!=="criador"&&currentUser.role!=="admin"){return alert("Somente criadores e administradores podem publicar.")}
-  modal(`<h2>Publicar conteúdo</h2><div class="form-grid">
-  <div class="field"><label>Tipo</label><select id="kind" onchange="togglePublishFields()"><option>Filme</option><option>Série</option><option>E-book</option></select></div>
-  <div class="field"><label>Nome / título</label><input id="title"></div>
-  <div class="field full"><label>Descrição</label><textarea id="desc"></textarea></div>
-  <div class="field"><label>Preço (Kz)</label><input id="price" type="number" min="0" value="0"></div>
-  <div class="field"><label>Acesso</label><select id="free"><option value="1">Grátis</option><option value="0">Pago</option></select></div>
-  <div class="field"><label>Parcelamento</label><select id="installments"><option>Não</option><option>Sim</option></select></div>
-  <div class="field"><label>Link de venda</label><input id="link" placeholder="https://..."></div>
-  <div class="field full"><label>Capa manual (opcional)</label><input id="coverFile" type="file" accept="image/*" onchange="previewCover(event)"></div>
-  <div id="videoField" class="field full"><label>Vídeo</label><input id="videoFile" type="file" accept="video/*" onchange="makeCovers(event)"></div>
-  <div id="seriesField" class="field full hidden"><label>Temporadas</label><input id="seasons" type="number" min="1" value="1"><label>Episódios por temporada</label><input id="episodes" type="number" min="1" value="10"></div>
-  <div id="covers" class="field full"></div></div><div class="form-actions"><button class="btn primary" onclick="savePublish()">Publicar</button></div>`)
-}
-function togglePublishFields(){const k=document.getElementById("kind").value;document.getElementById("videoField").classList.toggle("hidden",k==="E-book");document.getElementById("seriesField").classList.toggle("hidden",k!=="Série")}
-async function previewCover(e){window.manualCover=await fileToDataURL(e.target.files[0])}
-async function makeCovers(e){
-  const file=e.target.files[0];if(!file)return;
-  window.coverCandidates=await autoCovers(file,document.getElementById("title").value);
-  selectedCover=0;
-  document.getElementById("covers").innerHTML=`<label>Escolha uma das 5 capas automáticas</label><div class="cover-options">${window.coverCandidates.map((c,i)=>`<button class="cover-choice ${i===0?"selected":""}" onclick="chooseCover(${i})"><div style="background:${c.data?`url('${c.data}') center/cover`:`linear-gradient(145deg,hsl(${i*55} 45% 30%),#090b0f)`}">${c.label}</div></button>`).join("")}</div>`
-}
-function chooseCover(i){selectedCover=i;document.querySelectorAll(".cover-choice").forEach((b,n)=>b.classList.toggle("selected",n===i))}
-async function savePublish(){
-  const kind=document.getElementById("kind").value,title=document.getElementById("title").value.trim(),desc=document.getElementById("desc").value.trim();
-  if(!title)return alert("Informe o nome/título.");
-  const free=document.getElementById("free").value==="1", price=free?0:Number(document.getElementById("price").value||0);
-  const cover=window.manualCover||window.coverCandidates?.[selectedCover]?.data||"";
-  if(kind==="E-book"){
-    await put("ebooks",{id:uid(),title,description:desc,cover,price,free,installments:document.getElementById("installments").value==="Sim",link:document.getElementById("link").value.trim(),ownerId:currentUser.id,createdAt:Date.now(),kind:"E-book"});
-  }else{
-    const vf=document.getElementById("videoFile").files[0],video=vf?await fileToDataURL(vf):"";
-    await put("conteudos",{id:uid(),kind,title,name:title,description:desc,cover,video,price,free,installments:document.getElementById("installments").value==="Sim",link:document.getElementById("link").value.trim(),ownerId:currentUser.id,seasons:kind==="Série"?Number(document.getElementById("seasons").value||1):0,episodesPerSeason:kind==="Série"?Number(document.getElementById("episodes").value||1):0,createdAt:Date.now()});
-  }
-  closeModal();alert("Conteúdo publicado com sucesso.");render()
-}
-async function details(id,type){
-  const item=await get(type==="ebook"?"ebooks":"conteudos",id);if(!item)return;
-  const price=item.price>0?Number(item.price).toLocaleString("pt-AO")+" Kz":"Grátis";
-  modal(`<h2>${esc(item.title||item.name)}</h2>${coverHtml({...item,kind:item.kind||"E-book"})}<p>${esc(item.description||"")}</p><p><b>${price}</b> ${item.installments?"• Aceita parcelamento":""}</p>${item.kind==="Série"?`<p class="login-note">Temporadas: ${item.seasons||1} • Episódios por temporada: ${item.episodesPerSeason||1}</p>`:""}<div class="form-actions"><button class="btn primary" onclick="closeModal();${item.price>0?`buy('${item.id}','${type}')`:""}">${item.price>0?"Comprar":"Acessar conteúdo"}</button>${item.link?`<button class="btn" onclick="window.open('${esc(item.link)}','_blank')">Link de venda</button>`:""}</div>`)
-}
-async function buy(id,type){
-  const item=await get(type==="ebook"?"ebooks":"conteudos",id);if(!item)return;
-  if(item.price<=0)return alert("Conteúdo gratuito: acesso liberado.");
-  if(!currentUser){auth();return}
-  if(!confirm(`Compra DEMO: ${item.title||item.name} por ${item.price} Kz.\nNenhum dinheiro real será cobrado nesta versão. Continuar?`))return;
-  await put("transacoes",{id:uid(),type:"purchase",userId:currentUser.id,contentId:id,amount:Number(item.price),createdAt:Date.now()});
-  alert("Compra demo registada.");render()
-}
-async function requestPromo(){
-  if(!currentUser){auth();return}
-  const contents=[...(await all("conteudos")),...(await all("ebooks"))];
-  modal(`<h2>Solicitar promoção</h2><p class="login-note">Escolha o seu conteúdo. O administrador confirma o pagamento e ativa a promoção.</p><div class="form-grid"><div class="field full"><label>Conteúdo</label><select id="promoContent">${contents.filter(x=>x.ownerId===currentUser.id).map(x=>`<option value="${x.id}">${esc(x.title||x.name)}</option>`).join("")}</select></div><div class="field full"><label>Plano</label><select id="promoDays"><option value="7">7 dias — 500 Kz</option><option value="14">14 dias — 1.000 Kz</option></select></div></div><div class="form-actions"><button class="btn primary" onclick="savePromo()">Enviar pedido</button></div>`)
-}
-async function savePromo(){
-  const id=document.getElementById("promoContent").value,days=Number(document.getElementById("promoDays").value);
-  if(!id)return alert("Publique um conteúdo primeiro.");
-  const allc=[...(await all("conteudos")),...(await all("ebooks"))],c=allc.find(x=>x.id===id);
-  await put("promocoes",{id:uid(),contentId:id,contentTitle:c.title||c.name,ownerId:currentUser.id,days,price:days===7?500:1000,status:"pending",createdAt:Date.now()});
-  closeModal();alert("Pedido enviado ao administrador.");render()
-}
-async function activatePromo(id){
-  const p=await get("promocoes",id);if(!p)return;
-  p.status="active";p.start=Date.now();p.end=Date.now()+p.days*86400000;await put("promocoes",p);render()
-}
-async function seed(){
-  const users=await all("usuarios");
-  if(!users.some(u=>u.email==="admin@ima.local"))await put("usuarios",{id:uid(),email:"admin@ima.local",pass:"IMA1234",role:"admin"});
-  const c=await all("conteudos");
-  if(!c.length){
-    await put("conteudos",{id:uid(),kind:"Filme",title:"Meu Filme",name:"Meu Filme",description:"Exemplo de filme para começar o catálogo.",cover:"",video:"",price:0,free:true,ownerId:"demo",createdAt:Date.now()});
-    await put("conteudos",{id:uid(),kind:"Série",title:"Minha Série",name:"Minha Série",description:"Exemplo de série com temporadas e episódios.",cover:"",video:"",price:1500,free:false,seasons:1,episodesPerSeason:10,ownerId:"demo",createdAt:Date.now()});
-  }
-}
-document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
-document.querySelectorAll("[data-action='publish']").forEach(b=>b.addEventListener("click",publish));
-document.getElementById("btnLogin").onclick=auth;
-document.getElementById("btnAdmin").onclick=()=>setView("admin");
-document.getElementById("closeModal").onclick=closeModal;
-document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()});
-document.getElementById("search").addEventListener("input",render);
-openDB().then(seed).then(render).catch(e=>alert("Erro ao iniciar o armazenamento: "+e.message));
-
-
-// V7 startup recovery
-setTimeout(()=>migrarVideosAntigos(), 700);
+async function publishOnline(o){let coverUrl=o.coverData;if(o.coverFile)coverUrl=await upload(C.STORAGE_COVER_BUCKET,`${state.user.id}/${uid()}-${o.coverFile.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`,o.coverFile,o.coverFile.type);else if(o.coverData&&o.coverData.startsWith('data:')){const blob=blobFromData(o.coverData);if(blob)coverUrl=await upload(C.STORAGE_COVER_BUCKET,`${state.user.id}/${uid()}.jpg`,blob,'image/jpeg')}let ebookUrl=null;if(o.book)ebookUrl=await upload(C.STORAGE_EBOOK_BUCKET,`${state.user.id}/${uid()}-${o.book.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`,o.book,o.book.type||'application/pdf');const {data:c,error}=await sb.from('contents').insert({owner_id:state.user.id,type:o.type,title:o.title,description:o.desc,year:new Date().getFullYear(),price:o.price,free:o.price===0,cover_url:coverUrl,ebook_url:ebookUrl,status:'active'}).select().single();if(error)throw error;if(o.type==='Filme'){const f=$('#video').files[0];if(f){const url=await upload(C.STORAGE_VIDEO_BUCKET,`${state.user.id}/${c.id}.mp4`,f,f.type);const {error:e}=await sb.from('episodes').insert({content_id:c.id,season_no:1,episode_no:1,title:o.title,video_url:url});if(e)throw e}}else if(o.type==='Série'){const files=[...$('#episodeFiles').files];for(let i=0;i<files.length;i++){const f=files[i],url=await upload(C.STORAGE_VIDEO_BUCKET,`${state.user.id}/${c.id}-S1E${i+1}.mp4`,f,f.type);const {error:e}=await sb.from('episodes').insert({content_id:c.id,season_no:1,episode_no:i+1,title:`Episódio ${i+1}`,video_url:url});if(e)throw e}}}
+async function publishLocal(o){let video=null;if(o.type==='Filme')video=await fileData($('#video').files[0]);const book=o.book?await fileData(o.book):'';await lput('contents',{id:uid(),owner_id:state.user.id,ownerName:state.profile.name,type:o.type,title:o.title,description:o.desc,year:new Date().getFullYear(),price:o.price,free:o.price===0,cover:o.coverData,video,ebook:book,status:'active',created_at:Date.now()})}
+async function toggleFav(id){if(!state.user)return login();if(ONLINE){if(state.favorites.has(id)){await sb.from('favorites').delete().eq('user_id',state.user.id).eq('content_id',id);state.favorites.delete(id)}else{await sb.from('favorites').insert({user_id:state.user.id,content_id:id});state.favorites.add(id)}}else{const old=(await lget('favorites')).find(x=>x.userId===state.user.id&&String(x.contentId)===String(id));if(old)await ldel('favorites',old.id);else await lput('favorites',{id:uid(),userId:state.user.id,contentId:id});await loadData()}render()}
+async function share(id){const u=location.href.split('#')[0]+'#content='+id;try{await navigator.clipboard.writeText(u);toast('🔗 Link copiado.')}catch{prompt('Copie o link:',u)}}
+async function getEpisodes(id){if(!ONLINE)return [];const {data}=await sb.from('episodes').select('*').eq('content_id',id).order('season_no').order('episode_no');return data||[]}
+async function play(id){const x=state.contents.find(c=>String(c.id)===String(id));if(!x)return;if(x.type==='E-book'){if(x.ebook_url){const {data}=await sb.storage.from(C.STORAGE_EBOOK_BUCKET).createSignedUrl(x.ebook_url.split('/').slice(-2).join('/'),3600).catch(()=>({data:null}));window.open(x.ebook_url||data?.signedUrl,'_blank')}else if(x.ebook)window.open(x.ebook,'_blank');else toast('E-book sem arquivo.');return}let eps=await getEpisodes(id);if(ONLINE&&!eps.length)return toast('Vídeo ainda não disponível.');if(!ONLINE&&x.video)eps=[{id:'local',title:x.title,video_url:x.video}];if(!eps.length)return toast('Nenhum episódio disponível.');openModal(`<h2>▶️ ${esc(x.title)}</h2><div id="episodes">${eps.map((e,i)=>`<div class="episode"><span>${esc(e.title||'Episódio '+(i+1))}</span><button class="primary" data-ep="${i}">Assistir</button></div>`).join('')}</div><video class="video" id="player" controls></video><p class="small">Seu progresso é salvo automaticamente.</p>`);const v=$('#player');$$('[data-ep]').forEach(b=>b.onclick=async()=>{const e=eps[Number(b.dataset.ep)];v.src=e.video_url;if(state.progress.get(x.id))v.currentTime=state.progress.get(x.id).seconds||0;await v.play().catch(()=>{})});if(eps[0]){v.src=eps[0].video_url;if(state.progress.get(x.id))v.currentTime=state.progress.get(x.id).seconds||0}v.ontimeupdate=()=>{if(Math.floor(v.currentTime)%5===0)saveProgress(x.id,v.currentTime,v.duration||0)}}
+async function saveProgress(id,seconds,duration){if(!state.user)return;if(ONLINE){await sb.from('progress').upsert({user_id:state.user.id,content_id:id,seconds,duration,updated_at:new Date().toISOString()})}else{await lput('progress',{id:state.user.id+'_'+id,userId:state.user.id,contentId:id,seconds,duration,updatedAt:Date.now()})}}
+async function download(id){const x=state.contents.find(c=>String(c.id)===String(id));if(!x)return;if(!state.user)return login();if(ONLINE){const {data:eps}=await sb.from('episodes').select('video_url').eq('content_id',id).limit(1);const u=eps?.[0]?.video_url;if(!u)return toast('Sem vídeo para baixar.');const link=document.createElement('a');link.href=u;link.target='_blank';link.download=(x.title||'ima-filmes')+'.mp4';link.click();toast('⬇️ Download solicitado.')}else if(x.video){const a=document.createElement('a');a.href=x.video;a.download=(x.title||'ima-filmes')+'.mp4';a.click()}}
+async function login(){openModal(`<div class="form"><h2>👤 ${ONLINE?'Entrar / Criar conta online':'Entrar / Criar conta'}</h2><label>Nome (para conta nova)</label><input id="ln" placeholder="Seu nome"><label>E-mail</label><input id="le" type="email" required><label>Senha</label><input id="lp" type="password" required minlength="6"><button id="loginSubmit" class="primary">Entrar / Criar conta</button><p class="small">${ONLINE?'A autenticação é feita pelo Supabase.':'Modo local: conta guardada neste navegador.'}</p></div>`);$('#loginSubmit').onclick=async()=>{try{const name=$('#ln').value.trim()||'Utilizador',email=$('#le').value.trim().toLowerCase(),pass=$('#lp').value;if(pass.length<6)return toast('A senha deve ter pelo menos 6 caracteres.');if(ONLINE){let r=await sb.auth.signUp({email,password:pass,options:{data:{name}}});if(r.error)throw r.error;if(r.data.session)await loadProfile(r.data.user);else toast('Conta criada. Confirme o e-mail se o projeto exigir confirmação.')}else{await localLogin(name,email,pass);localStorage.setItem('ima_v9_local_user',state.user.id)}closeModal();render()}catch(e){toast('❌ '+(e.message||'Falha no login.'))}}}
+function settingsPage(){$('#main').innerHTML=`<div class="sectionhead"><h1>⚙️ Configurações</h1></div><div class="panel form"><p><b>Modo:</b> ${ONLINE?'Online / Supabase':'Local'}</p><p><b>Conta:</b> ${esc(state.profile?.name||'Visitante')} ${state.profile?.role==='admin'?'🛡️ Administrador':''}</p>${state.user?'<button id="logout" class="secondary">Sair da conta</button>':'<button id="login" class="primary">Entrar / Criar conta</button>'}</div>`;if($('#logout'))$('#logout').onclick=async()=>{if(ONLINE)await sb.auth.signOut();else{localStorage.removeItem('ima_v9_local_user');state.user=null;state.profile=null;render()}};if($('#login'))$('#login').onclick=login}
+async function salesPage(){const mine=state.transactions.filter(t=>t.seller_id===state.user?.id);$('#main').innerHTML=`<div class="sectionhead"><h1>💰 Minhas vendas</h1></div><div class="stats"><div class="stat">Vendas<b>${mine.length}</b></div><div class="stat">Total<b>${mine.reduce((s,t)=>s+Number(t.amount||0),0).toLocaleString('pt-AO')} Kz</b></div></div><div class="panel"><table class="table"><tr><th>Conteúdo</th><th>Valor</th><th>Data</th></tr>${mine.map(t=>`<tr><td>${esc(t.contents?.title||t.title||'Conteúdo')}</td><td>${Number(t.amount||0).toLocaleString('pt-AO')} Kz</td><td>${new Date(t.created_at||t.createdAt).toLocaleString()}</td></tr>`).join('')||'<tr><td colspan="3">Sem vendas.</td></tr>'}</table></div>`}
+async function libraryPage(){const a=[...state.progress.keys()].map(id=>state.contents.find(x=>String(x.id)===String(id))).filter(Boolean);$('#main').innerHTML=`<div class="sectionhead"><h1>📥 Minha Biblioteca</h1></div><div class="grid">${a.map(card).join('')||empty(state.user?'Comece a assistir para aparecer aqui.':'Entre na sua conta.')}</div>`;bind()}
+async function adminPage(){if(!state.profile||state.profile.role!=='admin'){if(!state.user){$('#main').innerHTML=`<div class="panel"><h2>🛡️ Administrador</h2><p>Entre com sua conta e depois atribua role=admin no Supabase.</p><button id="admLogin" class="primary">Entrar</button></div>`;$('#admLogin').onclick=login;return}$('#main').innerHTML=`<div class="panel"><h2>🛡️ Acesso de administrador</h2><p>Esta conta ainda não é administradora.</p><p class="small">No Supabase, altere public.profiles.role para admin para o utilizador escolhido.</p></div>`;return}const users=ONLINE?(await sb.from('profiles').select('*')).data||[]:await lget('users');$('#main').innerHTML=`<div class="sectionhead"><h1>🛡️ Painel Administrador</h1></div><div class="stats"><div class="stat">Conteúdos<b>${state.contents.length}</b></div><div class="stat">Utilizadores<b>${users.length}</b></div><div class="stat">Transações<b>${state.transactions.length}</b></div></div><div class="panel"><table class="table"><tr><th>Título</th><th>Tipo</th><th>Status</th><th>Ação</th></tr>${state.contents.map(x=>`<tr><td>${esc(x.title)}</td><td>${esc(x.type)}</td><td>${esc(x.status)}</td><td><button class="danger" data-remove="${x.id}">Remover</button></td></tr>`).join('')||'<tr><td colspan="4">Sem conteúdos.</td></tr>'}</table></div>`;$$('[data-remove]').forEach(b=>b.onclick=()=>removeContent(b.dataset.remove))}
+async function removeContent(id){if(ONLINE){const {error}=await sb.from('contents').update({status:'removed'}).eq('id',id);if(error)return toast('❌ '+error.message)}else{const x=state.contents.find(x=>String(x.id)===String(id));if(x){x.status='removed';await lput('contents',x)}}toast('Conteúdo removido.');render()}
+async function render(){await loadData();$('#userName').textContent=state.profile?.name||'Visitante';$$('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));switch(state.view){case'films':catalog('films');break;case'series':catalog('series');break;case'ebooks':catalog('ebooks');break;case'favorites':catalog('favorites');break;case'publish':publishPage();break;case'library':libraryPage();break;case'sales':salesPage();break;case'settings':settingsPage();break;case'admin':adminPage();break;default:homePage()}}
+$('#closeModal').onclick=()=>{$('#modal').classList.add('hidden');$('#modalBody').innerHTML=''};$('#modal').onclick=e=>{if(e.target.id==='modal')$('#closeModal').click()};$('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');$('#settingsBtn').onclick=()=>nav('settings');$('#userBtn').onclick=()=>state.user?nav('settings'):login();$('#search').oninput=e=>{state.query=e.target.value;render()};$('#searchBtn').onclick=()=>render();$$('nav button').forEach(b=>b.onclick=()=>nav(b.dataset.view));document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#closeModal').click()});
+(async()=>{try{await initAuth();await render();console.log('✅ I.M.A FILMES V9 iniciado:',ONLINE?'ONLINE':'LOCAL')}catch(e){console.error(e);$('#main').innerHTML=`<div class="panel"><h2>❌ Erro ao iniciar I.M.A FILMES</h2><p>${esc(e.message||e)}</p></div>`}})();
