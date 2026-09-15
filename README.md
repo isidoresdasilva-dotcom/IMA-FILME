@@ -1,27 +1,24 @@
-# I.M.A FILMES V9
+# I.M.A FILMES V9 — corrigido
 
-V9 é a primeira versão preparada para uso online com Supabase e GitHub Pages, mantendo fallback local.
+## Correções principais
+- Corrigido o erro de sintaxe no `app.js` causado por uma quebra de linha dentro de uma string.
+- Adicionadas as funções que estavam sendo chamadas mas não existiam: `openModal`, `closeModal` e `upload`.
+- Melhorado o modo local com IndexedDB.
+- Mantidas as 5 capas automáticas.
+- Adicionado fundo visual próprio em `fundo.svg`, sem depender de imagem externa.
+- Melhorada a página inicial e o visual responsivo.
+- Mantido o modo Supabase e o modo local.
 
-## Funcionalidades
-- cadastro/login por e-mail e senha via Supabase Auth
-- filmes, séries e e-books
-- upload de vídeos/capas/e-books para Supabase Storage
-- séries com episódios
-- 5 capas automáticas
-- favoritos e progresso
-- player e continuar assistindo
-- biblioteca, vendas e painel administrativo
-- pesquisa e layout responsivo
-- filtro básico de termos explícitos
+## Arquivos
+- `index.html`
+- `style.css`
+- `app.js`
+- `config.js`
+- `fundo.svg`
+- `README.md`
 
-## Configuração online
-1. Crie projeto Supabase.
-2. Execute `supabase/schema.sql`.
-3. Edite `config.js`.
-4. Abra o projeto no GitHub Pages.
+## Supabase
+Em `config.js`, coloque somente a URL do projeto e a chave publicável/anon.
+Nunca coloque `service_role` ou a senha do banco no navegador.
 
-### Segurança
-Nunca coloque `service_role` key no front-end. O bloqueio de conteúdo explícito por palavras é apenas uma primeira camada; moderação real de vídeo deve ser feita no servidor.
-
-### Administrador
-No banco, altere manualmente `profiles.role` de um utilizador para `admin`. Não existe senha administrativa fixa no código da V9.
+Para publicação online, crie os buckets `videos`, `capas` e `ebooks` e configure as políticas RLS/Storage adequadas.
