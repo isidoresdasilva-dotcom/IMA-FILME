@@ -67,6 +67,29 @@ function lget(store){return new Promise((resolve,reject)=>{const q=localDB.trans
 function lput(store,obj){return new Promise((resolve,reject)=>{const q=localDB.transaction(store,'readwrite').objectStore(store).put(obj);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});}
 function ldel(store,id){return new Promise((resolve,reject)=>{const q=localDB.transaction(store,'readwrite').objectStore(store).delete(id);q.onsuccess=()=>resolve();q.onerror=()=>reject(q.error);});}
 
+function isTemporaryBlobUrl(v){
+  return typeof v === 'string' && v.startsWith('blob:');
+}
+
+async function repairLocalContents(){
+  if(ONLINE || !localDB) return;
+  const items=await lget('contents');
+  let changed=false;
+  for(const x of items){
+    let bad=false;
+    if(isTemporaryBlobUrl(x.video)){ x.video=''; bad=true; }
+    if(isTemporaryBlobUrl(x.cover)){ x.cover=fallbackCover(x.title,0); bad=true; }
+    if(isTemporaryBlobUrl(x.ebook)){ x.ebook=''; bad=true; }
+    if(bad){
+      x.localRepairAt=Date.now();
+      await lput('contents',x);
+      changed=true;
+    }
+  }
+  if(changed) toast('⚠️ Alguns arquivos antigos temporários foram corrigidos. Publique-os novamente para recuperar os vídeos.');
+}
+
+
 async function localLogin(name,email,password){
   const users=await lget('users'); let u=users.find(x=>x.email===email);
   if(u && u.password!==password)throw new Error('Senha incorreta.');
@@ -150,9 +173,9 @@ async function publishLocal(o){let video=null;if(o.type==='Filme'){if(!$('#video
 async function toggleFav(id){if(!state.user)return login();if(ONLINE){if(state.favorites.has(id)){await sb.from('favorites').delete().eq('user_id',state.user.id).eq('content_id',id);state.favorites.delete(id);}else{const r=await sb.from('favorites').insert({user_id:state.user.id,content_id:id});if(r.error)return toast('❌ '+r.error.message);state.favorites.add(id);}}else{const old=(await lget('favorites')).find(x=>x.userId===state.user.id&&String(x.contentId)===String(id));if(old)await ldel('favorites',old.id);else await lput('favorites',{id:uid(),userId:state.user.id,contentId:id});await loadData();}render();}
 async function share(id){const u=location.href.split('#')[0]+'#content='+id;try{await navigator.clipboard.writeText(u);toast('🔗 Link copiado.');}catch{prompt('Copie o link:',u);}}
 async function getEpisodes(id){if(!ONLINE)return [];const {data,error}=await sb.from('episodes').select('*').eq('content_id',id).order('season_no').order('episode_no');if(error)console.warn(error.message);return data||[];}
-async function play(id){const x=state.contents.find(c=>String(c.id)===String(id));if(!x)return;if(x.type==='E-book'){if(x.ebook_url)window.open(x.ebook_url,'_blank');else if(x.ebook)window.open(x.ebook,'_blank');else toast('E-book sem arquivo.');return;}let eps=await getEpisodes(id);if(!ONLINE&&x.video)eps=[{id:'local',title:x.title,video_url:x.video}];if(!eps.length)return toast('Nenhum vídeo disponível.');openModal(`<h2>▶️ ${esc(x.title)}</h2><div id="episodes">${eps.map((e,i)=>`<div class="episode"><span>${esc(e.title||'Episódio '+(i+1))}</span><button class="primary" data-ep="${i}">Assistir</button></div>`).join('')}</div><video class="video" id="player" controls playsinline></video><p class="small">Seu progresso é salvo automaticamente.</p>`);const v=$('#player');$$('[data-ep]').forEach(b=>b.onclick=async()=>{const e=eps[Number(b.dataset.ep)];v.src=e.video_url;const p=state.progress.get(x.id);if(p)v.currentTime=Number(p.seconds)||0;await v.play().catch(()=>{});});if(eps[0])v.src=eps[0].video_url;v.ontimeupdate=()=>{if(Math.floor(v.currentTime)%5===0)saveProgress(x.id,v.currentTime,v.duration||0);};}
+async function play(id){const x=state.contents.find(c=>String(c.id)===String(id));if(!x)return;if(x.type==='E-book'){if(x.ebook_url)window.open(x.ebook_url,'_blank');else if(x.ebook)window.open(x.ebook,'_blank');else toast('E-book sem arquivo.');return;}let eps=await getEpisodes(id);if(!ONLINE&&x.video){if(isTemporaryBlobUrl(x.video))return toast('⚠️ Este vídeo foi salvo com um endereço temporário antigo. Publique o vídeo novamente.');eps=[{id:'local',title:x.title,video_url:x.video}]}if(!eps.length)return toast('Nenhum vídeo disponível.');openModal(`<h2>▶️ ${esc(x.title)}</h2><div id="episodes">${eps.map((e,i)=>`<div class="episode"><span>${esc(e.title||'Episódio '+(i+1))}</span><button class="primary" data-ep="${i}">Assistir</button></div>`).join('')}</div><video class="video" id="player" controls playsinline></video><p class="small">Seu progresso é salvo automaticamente.</p>`);const v=$('#player');$$('[data-ep]').forEach(b=>b.onclick=async()=>{const e=eps[Number(b.dataset.ep)];v.src=e.video_url;const p=state.progress.get(x.id);if(p)v.currentTime=Number(p.seconds)||0;await v.play().catch(()=>{});});if(eps[0])v.src=eps[0].video_url;v.ontimeupdate=()=>{if(Math.floor(v.currentTime)%5===0)saveProgress(x.id,v.currentTime,v.duration||0);};}
 async function saveProgress(id,seconds,duration){if(!state.user)return;if(ONLINE)await sb.from('progress').upsert({user_id:state.user.id,content_id:id,seconds,duration,updated_at:new Date().toISOString()});else await lput('progress',{id:state.user.id+'_'+id,userId:state.user.id,contentId:id,seconds,duration,updatedAt:Date.now()});}
-async function download(id){const x=state.contents.find(c=>String(c.id)===String(id));if(!x)return;if(!state.user)return login();if(ONLINE){const {data:eps}=await sb.from('episodes').select('video_url').eq('content_id',id).limit(1);const u=eps?.[0]?.video_url;if(!u)return toast('Sem vídeo para baixar.');const a=document.createElement('a');a.href=u;a.target='_blank';a.download=(x.title||'ima-filmes')+'.mp4';a.click();}else if(x.video){const a=document.createElement('a');a.href=x.video;a.download=(x.title||'ima-filmes')+'.mp4';a.click();}}
+async function download(id){const x=state.contents.find(c=>String(c.id)===String(id));if(!x)return;if(!state.user)return login();if(ONLINE){const {data:eps}=await sb.from('episodes').select('video_url').eq('content_id',id).limit(1);const u=eps?.[0]?.video_url;if(!u)return toast('Sem vídeo para baixar.');const a=document.createElement('a');a.href=u;a.target='_blank';a.download=(x.title||'ima-filmes')+'.mp4';a.click();}else if(x.video){if(isTemporaryBlobUrl(x.video))return toast('⚠️ Este vídeo antigo não está mais disponível. Publique-o novamente.');const a=document.createElement('a');a.href=x.video;a.download=(x.title||'ima-filmes')+'.mp4';a.click();}}
 
 async function login(){
   openModal(`<div class="form"><h2>👤 ${ONLINE?'Entrar / Criar conta online':'Entrar / Criar conta'}</h2><label>Nome (para conta nova)</label><input id="ln" placeholder="Seu nome"><label>E-mail</label><input id="le" type="email" required><label>Senha</label><input id="lp" type="password" required minlength="6"><button id="loginSubmit" class="primary">Entrar / Criar conta</button><p class="small">${ONLINE?'A autenticação é feita pelo Supabase.':'Modo local: conta guardada neste navegador.'}</p></div>`);
