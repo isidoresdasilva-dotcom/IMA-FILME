@@ -1,30 +1,7 @@
-<!doctype html>
-<html lang="pt-AO">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#08111f">
-<meta name="description" content="I.M.A FILMES V9 — plataforma de filmes, séries e e-books">
-<title>I.M.A FILMES V9</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<header class="top">
-<button id="menuBtn" class="icon" aria-label="Menu">☰</button>
-<div class="logo">🎬 <b>I.M.A FILMES</b><small>V9</small></div>
-<div class="search"><input id="search" placeholder="Pesquisar filmes e séries..." autocomplete="off"><button id="searchBtn">🔎</button></div>
-<div class="top-actions"><button class="icon">🔔</button><button id="settingsBtn" class="icon">⚙️</button><button id="userBtn" class="user">👤 <span id="userName">Visitante</span></button></div>
-</header>
-<div class="layout">
-<aside id="sidebar"><nav>
-<button data-view="home">🏠 Início</button><button data-view="films">🎬 Filmes</button><button data-view="series">📺 Séries</button><button data-view="ebooks">📚 E-books</button><button data-view="favorites">❤️ Favoritos</button><button data-view="publish">⬆️ Publicar conteúdo</button><button data-view="library">📥 Minha Biblioteca</button><button data-view="sales">💰 Minhas vendas</button><button data-view="settings">⚙️ Configurações</button><button data-view="admin">🛡️ Administrador</button>
-</nav><div class="sidefoot">I.M.A FILMES V9<br><span>Online + modo local</span></div></aside>
-<main id="main"></main>
-</div>
-<div id="toast" class="toast"></div>
-<div id="modal" class="modal hidden"><div class="modalbox"><button id="closeModal" class="close" aria-label="Fechar">✕</button><div id="modalBody"></div></div></div>
-<script src="config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js"></script>
-</body>
-</html>
+<!doctype html><html lang="pt-AO"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>I.M.A FILMES V10</title><meta name="description" content="I.M.A FILMES — marketplace de filmes, séries, anime, doramas e e-books."><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script></head><body>
+<div id="toast"></div><div id="appShell">
+<header class="topbar"><button id="menuBtn" class="icon">☰</button><div class="brand"><span class="brandmark">🎬</span><span>I.M.A FILMES</span></div><div class="search"><input id="search" placeholder="Pesquisar filmes, séries, anime, doramas e e-books..."><button id="searchBtn">🔎</button></div><div class="topActions"><button id="settingsBtn" class="icon">⚙️</button><button id="userBtn" class="userBtn">👤 <span id="userName">Visitante</span></button></div></header>
+<aside id="sidebar"><div class="sideTitle">NAVEGAÇÃO</div><nav><button data-view="home">🏠 Início</button><button data-view="films">🎬 Filmes</button><button data-view="series">📺 Séries</button><button data-view="anime">🍥 Anime</button><button data-view="dorama">🌸 Doramas</button><button data-view="ebooks">📚 E-books</button><button data-view="favorites">❤️ Favoritos</button><button data-view="publish">⬆️ Publicar conteúdo</button><button data-view="products">🛍️ Meus produtos</button><button data-view="profits">💰 Meus lucros</button><button data-view="promote">🚀 Promover produtos</button><button data-view="library">📥 Minha biblioteca</button><button data-view="settings">⚙️ Configurações</button><button data-view="admin">🛡️ Administrador</button></nav><div class="sideFoot">V10 • Marketplace digital</div></aside>
+<main id="main"></main></div>
+<div id="modal" class="hidden"><div class="modalBox"><button id="closeModal" class="close">×</button><div id="modalBody"></div></div></div>
+<script src="app.js"></script></body></html>
