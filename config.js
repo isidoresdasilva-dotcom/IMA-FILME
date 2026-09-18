@@ -1,12 +1,14 @@
-/* I.M.A FILMES V10
-   Use somente a chave pública (anon/publishable). Nunca publique service_role.
+/* I.M.A FILMES V10.1
+   Configuração pública do projeto Supabase.
+   NUNCA coloque service_role, secret key ou senha do banco neste arquivo.
 */
 window.IMA_CONFIG={
-  SUPABASE_URL:"COLOQUE_AQUI_A_URL_DO_SEU_PROJETO",
-  SUPABASE_ANON_KEY:"COLOQUE_AQUI_A_CHAVE_PUBLICA",
+  SUPABASE_URL:"https://ibamnkaeiadvutpreouf.supabase.co",
+  SUPABASE_ANON_KEY:"sb_publishable_h1TgSCiFk8TMvyTkzl1v3A_Ki3R7lV4",
   STORAGE_VIDEO_BUCKET:"videos",
   STORAGE_COVER_BUCKET:"capas",
   STORAGE_EBOOK_BUCKET:"ebooks",
-  STORAGE_AVATAR_BUCKET:"avatars",
-  STORAGE_PREVIEW_BUCKET:"previews"
+  STORAGE_AVATAR_BUCKET:"perfis",
+  STORAGE_PREVIEW_BUCKET:"promocoes",
+  STORAGE_PAYMENT_BUCKET:"payments"
 };
