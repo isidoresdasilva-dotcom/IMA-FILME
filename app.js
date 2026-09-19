@@ -32,7 +32,59 @@ function bindCards(){ $$('[data-play]').forEach(b=>b.onclick=()=>play(b.dataset.
 function home(){const a=filtered();$('#main').innerHTML=hero()+`<div class="sectionhead"><h2>Conteúdos em destaque</h2><span class="meta">${a.length} itens</span></div><div class="grid">${a.slice(0,12).map(card).join('')||'<div class="empty">Nenhum conteúdo publicado.</div>'}</div>`;$('#heroSell').onclick=()=>nav('publish');bindCards()}
 function catalog(t){const map={Filme:'Filmes',Série:'Séries',Anime:'Anime',Dorama:'Doramas','E-book':'E-books'};const a=filtered(t);$('#main').innerHTML=`<div class="sectionhead"><h1>${map[t]}</h1><span class="meta">${a.length} itens</span></div><div class="grid">${a.map(card).join('')||'<div class="empty">Nenhum conteúdo encontrado.</div>'}</div>`;bindCards()}
 function nav(v){state.view=v;$('#sidebar').classList.remove('open');render()}
-function login(){openModal(`<div class="form"><h2>👤 ${ONLINE?'Entrar / criar conta':'Entrar / criar conta'}</h2><label>Nome</label><input id="ln"><label>E-mail</label><input id="le" type="email"><label>Senha</label><input id="lp" type="password" minlength="6"><button class="primary" id="doLogin">Entrar / Criar conta</button><p class="small">${ONLINE?'A conta é gerida pelo Supabase.':'Modo demonstração: conta guardada neste navegador.'}</p></div>`);$('#doLogin').onclick=async()=>{try{const name=$('#ln').value.trim()||'Utilizador',email=$('#le').value.trim().toLowerCase(),pass=$('#lp').value;if(pass.length<6)throw Error('A senha precisa de 6 caracteres.');if(ONLINE){const r=await sb.auth.signUp({email,password:pass,options:{data:{name}}});if(r.error)throw r.error;if(r.data.session)await profile(r.data.user);else toast('Conta criada. Confirme o e-mail, se solicitado.')}else{const us=await lget('users');let u=us.find(x=>x.email===email);if(u&&u.password!==pass)throw Error('Senha incorreta.');if(!u){u={id:uid(),name,email,password:pass,role:'seller'};await lput('users',u)}state.user={id:u.id,email};state.profile=u;localStorage.setItem('ima_v10_user',u.id)}closeModal();await render()}catch(e){toast('❌ '+e.message)}}}
+function login(){
+  openModal(`<div class="form"><h2>👤 Minha conta</h2><label>Nome (somente para criar conta)</label><input id="ln" placeholder="Seu nome"><label>E-mail</label><input id="le" type="email" autocomplete="email" required><label>Senha</label><input id="lp" type="password" autocomplete="current-password" minlength="6" required><div class="row" style="margin-top:12px"><button class="primary" id="doLogin" type="button">🔵 Entrar</button><button class="green" id="doSignup" type="button">🟢 Criar conta</button></div><p class="small" id="authMsg">Use <b>Entrar</b> para uma conta existente ou <b>Criar conta</b> para uma conta nova.</p></div>`);
+  const msg=$('#authMsg'), loginBtn=$('#doLogin'), signupBtn=$('#doSignup');
+  const fields=()=>({name:$('#ln').value.trim()||'Utilizador',email:$('#le').value.trim().toLowerCase(),pass:$('#lp').value});
+  const busy=(on,label)=>{loginBtn.disabled=on;signupBtn.disabled=on;loginBtn.textContent=on?label:'🔵 Entrar';signupBtn.textContent=on?label:'🟢 Criar conta';};
+  loginBtn.onclick=async()=>{
+    const {email,pass}=fields();
+    if(!email)return toast('Digite o e-mail.');
+    if(pass.length<6)return toast('A senha precisa de 6 caracteres.');
+    try{
+      busy(true,'⏳ Aguarde...');
+      if(ONLINE){
+        const r=await sb.auth.signInWithPassword({email,password:pass});
+        if(r.error)throw r.error;
+        if(r.data.user)await profile(r.data.user);
+      }else{
+        const us=await lget('users');
+        const u=us.find(x=>x.email===email);
+        if(!u)throw Error('Conta não encontrada. Clique em Criar conta.');
+        if(u.password!==pass)throw Error('Senha incorreta.');
+        state.user={id:u.id,email:u.email};state.profile=u;localStorage.setItem('ima_v10_user',u.id);
+      }
+      closeModal();await render();
+    }catch(e){
+      console.error(e);
+      const m=e?.status===429||e?.code==='over_request_rate_limit'||/too many requests|rate limit/i.test(e?.message||'')?'Muitas tentativas. Aguarde alguns minutos e tente novamente.':(e?.message||'Falha ao entrar.');
+      msg.textContent=m;toast('❌ '+m);
+    }finally{busy(false);}
+  };
+  signupBtn.onclick=async()=>{
+    const {name,email,pass}=fields();
+    if(!email)return toast('Digite o e-mail.');
+    if(pass.length<6)return toast('A senha precisa de 6 caracteres.');
+    try{
+      busy(true,'⏳ Criando...');
+      if(ONLINE){
+        const r=await sb.auth.signUp({email,password:pass,options:{data:{name}}});
+        if(r.error)throw r.error;
+        if(r.data.session&&r.data.user)await profile(r.data.user);
+        else {msg.textContent='Conta criada. Verifique seu e-mail se a confirmação estiver ativada.';toast('✅ Conta criada.');return;}
+      }else{
+        const us=await lget('users');
+        if(us.some(x=>x.email===email))throw Error('Este e-mail já está cadastrado. Use Entrar.');
+        const u={id:uid(),name,email,password:pass,role:'seller'};await lput('users',u);state.user={id:u.id,email};state.profile=u;localStorage.setItem('ima_v10_user',u.id);
+      }
+      closeModal();await render();
+    }catch(e){
+      console.error(e);
+      const m=e?.status===429||e?.code==='over_request_rate_limit'||/too many requests|rate limit/i.test(e?.message||'')?'Muitas tentativas de cadastro. Aguarde alguns minutos e tente novamente.':(e?.message||'Falha ao criar conta.');
+      msg.textContent=m;toast('❌ '+m);
+    }finally{busy(false);}
+  };
+}
 function openModal(h){$('#modalBody').innerHTML=h;$('#modal').classList.remove('hidden')}
 function closeModal(){$('#modal').classList.add('hidden');$('#modalBody').innerHTML=''}
 async function publishPage(){if(!state.user){$('#main').innerHTML='<div class="panel"><h2>Bem-vindo ao I.M.A FILMES</h2><p>Entre ou crie seu cadastro para começar.</p><button class="primary" id="li">Entrar / Criar conta</button></div>';$('#li').onclick=login;return}const name=state.profile?.name||'Vendedor';$('#main').innerHTML=`<div class="panel"><div class="profile"><img class="avatar" src="${esc(state.profile?.avatar_url||fallbackCover(name,'Perfil'))}"><div><h1>Bem-vindo, ${esc(name)} 👋</h1><p>O que vamos vender hoje?</p></div></div><div class="row" style="margin-top:20px"><button class="green" id="free">🟢 Publicar grátis</button><button class="primary" id="sell">🔵 Vender conteúdo</button></div></div>`;$('#free').onclick=()=>contentForm(true);$('#sell').onclick=()=>contentForm(false)}
