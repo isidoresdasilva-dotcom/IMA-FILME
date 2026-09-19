@@ -84,17 +84,45 @@ function catalog(kind){
  m.innerHTML=`<div class="sectionhead"><div><h2>${names[kind]}</h2><div class="meta">Conteúdos disponíveis na plataforma</div></div><span class="meta">${a.length} item(ns)</span></div><div class="grid">${a.length?a.map(card).join(""):empty("Nenhum conteúdo encontrado.")}</div>`;bindCards();
 }
 function publishType(type,icon,label){return `<button type="button" class="publish-type ${type==="filme"?"selected":""}" data-type="${type}"><span>${icon}</span><strong>${label}</strong><small>Publicar ${label}</small></button>`}
+function autoCovers(file,title){
+ return new Promise(resolve=>{
+  const fallback=[0,1,2,3,4].map(i=>fallbackCover(title,i));
+  if(!file || !String(file.type||'').startsWith('video/')){ resolve(fallback); return; }
+  const video=document.createElement('video'); video.muted=true; video.playsInline=true; video.preload='metadata';
+  const objectUrl=URL.createObjectURL(file); video.src=objectUrl;
+  const finish=(covers)=>{try{URL.revokeObjectURL(objectUrl)}catch(e){} resolve(covers&&covers.length===5?covers:fallback)};
+  video.onerror=()=>finish(fallback);
+  video.onloadedmetadata=()=>{
+   const duration=Number.isFinite(video.duration)&&video.duration>0?video.duration:10;
+   const times=[0.05,0.20,0.40,0.60,0.80].map(p=>Math.max(0.1,Math.min(Math.max(0.2,duration-0.1),duration*p)));
+   const canvas=document.createElement('canvas'); canvas.width=640; canvas.height=360;
+   const ctx=canvas.getContext('2d'); const covers=[]; let i=0;
+   const seek=()=>{video.currentTime=times[i]};
+   video.onseeked=()=>{try{ctx.drawImage(video,0,0,640,360);covers.push(canvas.toDataURL('image/jpeg',0.86));i++;if(i<times.length)seek();else finish(covers)}catch(e){finish(fallback)}};
+   seek();
+  };
+ });
+}
+function renderAutoCovers(covers){
+ const box=$('#coverOptions'); if(!box)return;
+ box.innerHTML='<div class="meta" style="margin:10px 0">🎨 Escolha uma das 5 capas automáticas:</div><div class="cover-options">'+covers.map((c,i)=>`<button type="button" class="cover-choice ${i===0?'selected':''}" data-cover-index="${i}"><img src="${c}" alt="Capa ${i+1}"><span>Capa ${i+1}</span></button>`).join('')+'</div>';
+ $$('.cover-choice').forEach(b=>b.onclick=()=>{$$('.cover-choice').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');window.__imaChosenCover=covers[Number(b.dataset.coverIndex)]});
+ window.__imaChosenCover=covers[0]||'';
+}
+
 function publishForm(type){
- const eb=type==="ebook";
+ const eb=type==='ebook';
  return `<div class="form-card"><div class="form-header"><div><h2>${typeIcon(type)} ${capitalize(type)}</h2><p>Preencha os dados do conteúdo.</p></div><span class="status-badge">NOVO</span></div>
  <label>Título<input id="pubTitle" maxlength="150" placeholder="Digite o título"></label>
  <label>Descrição<textarea id="pubDescription" rows="5" maxlength="3000" placeholder="Descreva seu conteúdo..."></textarea></label>
- <label>Capa<input id="pubCover" type="file" accept="image/*"><small>JPG ou PNG recomendado.</small></label>
- ${eb?`<label>Arquivo do e-book<input id="pubEbook" type="file" accept=".pdf,.epub"></label>`:`<label>Vídeo<input id="pubVideo" type="file" accept="video/*"></label>`}
+ <label>Capa manual (opcional)<input id="pubCover" type="file" accept="image/*"><small>Se não escolher uma capa, o sistema gera 5 capas automaticamente a partir do vídeo.</small></label>
+ <div id="coverOptions"></div>
+ ${eb?`<label>Arquivo do e-book<input id="pubEbook" type="file" accept=".pdf,.epub"></label>`:`<label>Vídeo<input id="pubVideo" type="file" accept="video/*"><small>Ao selecionar o vídeo, serão geradas 5 capas automaticamente.</small></label>`}
  <h3>Tipo de acesso</h3><div class="access-buttons"><button type="button" class="access-btn selected" data-free="true">🟢 GRÁTIS</button><button type="button" class="access-btn" data-free="false">🔵 VENDER</button></div>
  <div id="priceArea" style="display:none"><label>Preço em Kz<input id="pubPrice" type="number" min="1" step="1" placeholder="Ex.: 1500"></label><div class="commission-info">💡 Comissão da plataforma: <strong>10%</strong></div></div>
  <button id="publishButton" class="ima-btn ima-btn-primary publish-main-button">⬆️ Publicar conteúdo</button><div id="publishStatus"></div></div>`
 }
+
 function typeIcon(t){return {filme:"🎬",série:"📺",anime:"🍥",dorama:"🌸",ebook:"📚"}[t]||"🎬"}
 function capitalize(t){return String(t).charAt(0).toUpperCase()+String(t).slice(1)}
 function publishPage(){
@@ -103,25 +131,45 @@ function publishPage(){
  $$(".publish-type").forEach(b=>b.onclick=()=>{$$(".publish-type").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");$("#publishForm").innerHTML=publishForm(b.dataset.type);bindPublishForm()});bindPublishForm();
 }
 function bindPublishForm(){
- $$(".access-btn").forEach(b=>b.onclick=()=>{$$(".access-btn").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");$("#priceArea").style.display=b.dataset.free==="false"?"block":"none"});
- $("#publishButton")?.addEventListener("click",publishCurrent);
+ $$('.access-btn').forEach(b=>b.onclick=()=>{$$('.access-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('#priceArea').style.display=b.dataset.free==='false'?'block':'none'});
+ const video=$('#pubVideo');
+ if(video) video.addEventListener('change',async()=>{const file=video.files?.[0];if(!file)return;toast('🎨 Gerando 5 capas automáticas...');const covers=await autoCovers(file,$('#pubTitle')?.value.trim()||'I.M.A FILMES');renderAutoCovers(covers);toast('✅ 5 capas geradas. Escolha uma.');});
+ const title=$('#pubTitle');
+ if(title) title.addEventListener('input',async()=>{const file=$('#pubVideo')?.files?.[0];if(file){const covers=await autoCovers(file,title.value.trim()||'I.M.A FILMES');renderAutoCovers(covers);}});
+ const manual=$('#pubCover');
+ if(manual) manual.addEventListener('change',()=>{if(manual.files?.[0])window.__imaChosenCover=''});
+ $('#publishButton')?.addEventListener('click',publishCurrent);
 }
 async function publishCurrent(){
- const title=$("#pubTitle")?.value.trim(),description=$("#pubDescription")?.value.trim(),type=$(".publish-type.selected")?.dataset.type||"filme",free=$(".access-btn.selected")?.dataset.free!=="false",price=free?0:Number($("#pubPrice")?.value||0);
- const cover=$("#pubCover")?.files?.[0]||null,video=$("#pubVideo")?.files?.[0]||null,ebook=$("#pubEbook")?.files?.[0]||null;
- if(!title)return toast("Digite o título.");if(!free&&price<=0)return toast("Informe um preço válido.");
- if(type==="ebook"&&!ebook)return toast("Selecione o e-book.");if(type!=="ebook"&&!video)return toast("Selecione o vídeo.");
- try{ONLINE&&state.user?await publishOnline({type,title,description,free,price,cover,video,ebook}):await publishLocal({type,title,description,free,price,cover,video,ebook});toast("✅ Conteúdo publicado!");nav("products")}catch(e){console.error(e);toast("❌ Erro ao publicar: "+(e.message||""))}
+ const title=$('#pubTitle')?.value.trim(),description=$('#pubDescription')?.value.trim(),type=$('.publish-type.selected')?.dataset.type||'filme',free=$('.access-btn.selected')?.dataset.free!=='false',price=free?0:Number($('#pubPrice')?.value||0);
+ const cover=$('#pubCover')?.files?.[0]||null,video=$('#pubVideo')?.files?.[0]||null,ebook=$('#pubEbook')?.files?.[0]||null;
+ if(!title)return toast('Digite o título.');if(!free&&price<=0)return toast('Informe um preço válido.');if(type==='ebook'&&!ebook)return toast('Selecione o e-book.');if(type!=='ebook'&&!video)return toast('Selecione o vídeo.');
+ try{
+  let generatedCover=window.__imaChosenCover||'';
+  if(!cover&&video&&!generatedCover){toast('🎨 Gerando capa...');const covers=await autoCovers(video,title);renderAutoCovers(covers);generatedCover=window.__imaChosenCover||covers[0]||'';}
+  const data={type,title,description,free,price,cover,video,ebook,generatedCover};
+  if(ONLINE&&state.user)await publishOnline(data);else await publishLocal(data);
+  toast('✅ Conteúdo publicado!');nav('products');
+ }catch(e){console.error(e);toast('❌ Erro ao publicar: '+(e.message||''));}
 }
+
 async function uploadPublic(bucket,path,file){const r=await sb.storage.from(bucket).upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});if(r.error)throw r.error;return sb.storage.from(bucket).getPublicUrl(path).data.publicUrl}
 async function uploadPrivate(bucket,path,file){const r=await sb.storage.from(bucket).upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});if(r.error)throw r.error;return path}
 async function publishOnline(d){
- const id=uid(),coverUrl=d.cover?await uploadPublic(C.STORAGE_COVER_BUCKET||"capas",`${state.user.id}/${id}-${safeFileName(d.cover.name)}`,d.cover):fallbackCover(d.title);
- let ebookPath=null;if(d.ebook)ebookPath=await uploadPrivate(C.STORAGE_EBOOK_BUCKET||"ebooks",`${state.user.id}/${id}-${safeFileName(d.ebook.name)}`,d.ebook);
- const {error}=await sb.from("contents").insert({id,owner_id:state.user.id,title:d.title,description:d.description,type:d.type,price:d.price,free:d.free,cover_url:coverUrl,ebook_url:ebookPath,status:"published"});if(error)throw error;
- if(d.video){const p=await uploadPrivate(C.STORAGE_VIDEO_BUCKET||"videos",`${state.user.id}/${id}-${safeFileName(d.video.name)}`,d.video);const e=await sb.from("episodes").insert({id:uid(),content_id:id,season:1,episode_number:1,title:d.title,video_url:p});if(e.error)throw e.error}
+ const id=uid();
+ let coverUrl=d.generatedCover||fallbackCover(d.title,0);
+ if(d.cover){coverUrl=await uploadPublic(C.STORAGE_COVER_BUCKET||'capas',`${state.user.id}/${id}-${safeFileName(d.cover.name)}`,d.cover)}
+ else if(d.generatedCover){coverUrl=await uploadPublic(C.STORAGE_COVER_BUCKET||'capas',`${state.user.id}/${id}-auto-cover.jpg`,blobFromData(d.generatedCover),'image/jpeg')}
+ let ebookPath=null;
+ if(d.ebook)ebookPath=await uploadPrivate(C.STORAGE_EBOOK_BUCKET||'ebooks',`${state.user.id}/${id}-${safeFileName(d.ebook.name)}`,d.ebook);
+ const payload={id,owner_id:state.user.id,title:d.title,description:d.description,type:d.type,price:d.price,free:d.free,cover_url:coverUrl,ebook_url:ebookPath,status:'published'};
+ const {error}=await sb.from('contents').insert(payload);
+ if(error)throw error;
+ if(d.video){const p=await uploadPrivate(C.STORAGE_VIDEO_BUCKET||'videos',`${state.user.id}/${id}-${safeFileName(d.video.name)}`,d.video);const e=await sb.from('episodes').insert({id:uid(),content_id:id,season:1,episode_number:1,title:d.title,video_url:p});if(e.error)throw e.error}
  await loadData();
 }
+function blobFromData(dataUrl){const parts=String(dataUrl).split(',');const mime=(parts[0].match(/:(.*?);/)||[])[1]||'application/octet-stream';const bytes=atob(parts[1]||'');const arr=new Uint8Array(bytes.length);for(let i=0;i<bytes.length;i++)arr[i]=bytes.charCodeAt(i);return new Blob([arr],{type:mime})}
+
 function fileToDataUrl(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(file)})}
 async function publishLocal(d){
  const item={id:uid(),owner_id:state.user?.id||"local",ownerName:state.profile?.name||"Meu perfil",title:d.title,description:d.description,type:d.type,price:d.price,free:d.free,status:"published",cover_url:d.cover?await fileToDataUrl(d.cover):fallbackCover(d.title),video_file:d.video?await fileToDataUrl(d.video):null,ebook_file:d.ebook?await fileToDataUrl(d.ebook):null,created_at:new Date().toISOString()};
