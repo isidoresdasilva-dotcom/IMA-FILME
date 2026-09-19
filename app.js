@@ -1,112 +1,336 @@
-/* I.M.A FILMES V10 - frontend profissional
-   Backend: Supabase. Sem backend configurado, funciona em modo demonstração local.
-*/
-const C=window.IMA_CONFIG||{};
-const ONLINE=!!(window.supabase&&C.SUPABASE_URL&&C.SUPABASE_ANON_KEY&&!C.SUPABASE_URL.includes('COLOQUE_AQUI'));
-const sb=ONLINE?window.supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY):null;
-const BLOCKED=['pornografia','pornô','porno','porn','xxx','sexo explícito','sex explicit','nudez explícita'];
-const state={user:null,profile:null,view:'home',query:'',contents:[],favorites:new Set(),progress:new Map(),orders:[],promotions:[],deliveries:[],admin:false};
-let localDB=null;
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function uid(){return crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2)}
-function toast(t){const e=$('#toast');if(!e)return;e.textContent=t;e.className='toast show';setTimeout(()=>e.className='toast',3000)}
-function blocked(t){return BLOCKED.some(w=>String(t||'').toLowerCase().includes(w))}
-function poster(title,type,i=0){const palettes=['0f172a','172554','164e63','312e81','3f1d3d'];const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#${palettes[i%5]}"/><stop offset="1" stop-color="#020617"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><circle cx="1050" cy="110" r="190" fill="#60a5fa" opacity=".15"/><text x="70" y="100" fill="#93c5fd" font-size="30" font-family="Arial" font-weight="700">I.M.A FILMES</text><text x="70" y="380" fill="white" font-size="58" font-family="Arial" font-weight="900">${esc(title).slice(0,24)}</text><text x="70" y="430" fill="#cbd5e1" font-size="28" font-family="Arial">${esc(type)} • V10</text></svg>`;return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
-function hero(){const items=[['FILMES EM DESTAQUE','Filme',0],['SÉRIES QUE PRENDEM','Série',1],['MUNDO DOS ANIMES','Anime',2],['DORAMAS EMOCIONANTES','Dorama',3]];return `<section class="hero"><div class="heroSlide" style="background-image:url('${poster(...items[0])}')"></div><div class="heroSlide" style="background-image:url('${poster(...items[1])}')"></div><div class="heroSlide" style="background-image:url('${poster(...items[2])}')"></div><div class="heroSlide" style="background-image:url('${poster(...items[3])}')"></div><div class="heroShade"></div><div class="heroText"><div class="movingBrand">I.M.A FILMES</div><h1>Assista. Venda. Descubra.</h1><p>Filmes, séries, anime, doramas e e-books numa plataforma feita para criadores e espectadores.</p><button class="primary" id="heroSell">Começar a vender</button></div></section>`}
-function fallbackCover(t,n=0){return poster(t,'Conteúdo',n)}
-function fileData(f){return new Promise((res,rej)=>{if(!f)return res('');const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(f)})}
-function blobFromData(d){if(d instanceof Blob)return d;if(typeof d!=='string'||!d.startsWith('data:'))return null;const [h,b]=d.split(',');const mime=(h.match(/data:([^;]+)/)||[])[1]||'application/octet-stream';const bin=atob(b),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:mime})}
-async function autoCovers(file,title){const fall=[0,1,2,3,4].map(i=>fallbackCover(title,i));if(!file||!file.type.startsWith('video/'))return fall;return new Promise(resolve=>{const v=document.createElement('video');v.muted=true;v.preload='metadata';v.src=URL.createObjectURL(file);v.onloadedmetadata=()=>{const d=isFinite(v.duration)&&v.duration>0?v.duration:10,times=[.05,.2,.4,.6,.8].map(p=>Math.max(.1,Math.min(Math.max(.2,d-.1),d*p))),c=document.createElement('canvas');c.width=640;c.height=360;const out=[];let i=0;v.onseeked=()=>{try{c.getContext('2d').drawImage(v,0,0,640,360);out.push(c.toDataURL('image/jpeg',.84));i++;if(i<times.length)v.currentTime=times[i];else{URL.revokeObjectURL(v.src);resolve(out.length===5?out:fall)}}catch{URL.revokeObjectURL(v.src);resolve(fall)}};v.currentTime=times[0]};v.onerror=()=>{URL.revokeObjectURL(v.src);resolve(fall)}})}
-function localOpen(){return new Promise((res,rej)=>{const r=indexedDB.open('IMA_FILMES_DB_V10',1);r.onupgradeneeded=e=>{const db=e.target.result;['contents','users','favorites','progress','orders','promotions','comments'].forEach(s=>{if(!db.objectStoreNames.contains(s))db.createObjectStore(s,{keyPath:'id'})})};r.onsuccess=()=>{localDB=r.result;res()};r.onerror=()=>rej(r.error)})}
-function lget(s){return new Promise((res,rej)=>{const q=localDB.transaction(s).objectStore(s).getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error)})}
-function lput(s,o){return new Promise((res,rej)=>{const q=localDB.transaction(s,'readwrite').objectStore(s).put(o);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
-function ldel(s,id){return new Promise((res,rej)=>{const q=localDB.transaction(s,'readwrite').objectStore(s).delete(id);q.onsuccess=()=>res();q.onerror=()=>rej(q.error)})}
-async function upload(bucket,path,file){if(!sb)throw Error('Supabase não configurado.');const r=await sb.storage.from(bucket).upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false});if(r.error)throw r.error;return sb.storage.from(bucket).getPublicUrl(path).data.publicUrl}
-async function init(){if(ONLINE){const {data}=await sb.auth.getSession();if(data.session)await profile(data.session.user);sb.auth.onAuthStateChange(async(_,s)=>{if(s)await profile(s.user);else{state.user=null;state.profile=null}await render()})}else{await localOpen();const id=localStorage.getItem('ima_v10_user');if(id){const u=(await lget('users')).find(x=>x.id===id);if(u){state.user={id:u.id,email:u.email};state.profile=u}}}}
-async function profile(u){state.user=u;const {data}=await sb.from('profiles').select('*').eq('id',u.id).maybeSingle();state.profile=data||{id:u.id,name:u.user_metadata?.name||u.email,role:'user'}}
-async function load(){if(ONLINE){const c=await sb.from('contents').select('*,profiles:owner_id(name,avatar_url)').eq('status','active').order('created_at',{ascending:false});if(c.error)console.warn('Conteúdos:',c.error.message);state.contents=c.data||[];if(state.user){const f=await sb.from('favorites').select('content_id').eq('user_id',state.user.id);state.favorites=new Set((f.data||[]).map(x=>x.content_id));const p=await sb.from('progress').select('*').eq('user_id',state.user.id);state.progress=new Map((p.data||[]).map(x=>[x.content_id,x]));const o=await sb.from('transactions').select('*,contents(title)').or(`buyer_id.eq.${state.user.id},seller_id.eq.${state.user.id}`);if(o.error)console.warn('Transações:',o.error.message);state.orders=o.data||[];const pr=await sb.from('promotions').select('*,promotion_plans(*)').eq('seller_id',state.user.id);state.promotions=pr.data||[];const d=await sb.from('deliveries').select('*,contents(title)').or(`buyer_id.eq.${state.user.id},seller_id.eq.${state.user.id}`);state.deliveries=d.data||[]}}else{state.contents=(await lget('contents')).filter(x=>x.status!=='removed');if(state.user){const f=await lget('favorites');state.favorites=new Set(f.filter(x=>x.userId===state.user.id).map(x=>x.contentId));const p=await lget('progress');state.progress=new Map(p.filter(x=>x.userId===state.user.id).map(x=>[x.contentId,x]))}state.orders=await lget('orders');state.promotions=await lget('promotions');state.deliveries=[]}}
-function filtered(type){let a=state.contents;if(type)a=a.filter(x=>x.type.toLowerCase()===type.toLowerCase());if(state.view==='favorites')a=a.filter(x=>state.favorites.has(x.id));if(state.query){const q=state.query.toLowerCase();a=a.filter(x=>(x.title+' '+(x.description||'')+' '+x.type).toLowerCase().includes(q))}return a}
-function card(x){const fav=state.favorites.has(x.id);return `<article class="card"><img class="cover" src="${esc(x.cover_url||x.cover||fallbackCover(x.title))}"><div class="cardbody"><h3>${esc(x.title)}</h3><div class="meta">${esc(x.type)} • ${esc(x.profiles?.name||x.ownerName||'Vendedor')}</div><p class="desc">${esc(x.description||'Sem descrição.')}</p><span class="tag">${x.free||Number(x.price)===0?'Grátis':Number(x.price).toLocaleString('pt-AO')+' Kz'}</span><div class="actions"><button data-play="${x.id}">▶️</button><button data-fav="${x.id}">${fav?'💔':'❤️'}</button><button data-buy="${x.id}">${x.free||Number(x.price)===0?'🎁':'🛒'}</button><button data-share="${x.id}">🔗</button></div></div></article>`}
-function bindCards(){ $$('[data-play]').forEach(b=>b.onclick=()=>play(b.dataset.play));$$('[data-fav]').forEach(b=>b.onclick=()=>fav(b.dataset.fav));$$('[data-buy]').forEach(b=>b.onclick=()=>buy(b.dataset.buy));$$('[data-share]').forEach(b=>b.onclick=()=>share(b.dataset.share))}
-function home(){const a=filtered();$('#main').innerHTML=hero()+`<div class="sectionhead"><h2>Conteúdos em destaque</h2><span class="meta">${a.length} itens</span></div><div class="grid">${a.slice(0,12).map(card).join('')||'<div class="empty">Nenhum conteúdo publicado.</div>'}</div>`;$('#heroSell').onclick=()=>nav('publish');bindCards()}
-function catalog(t){const map={Filme:'Filmes',Série:'Séries',Anime:'Anime',Dorama:'Doramas','E-book':'E-books'};const a=filtered(t);$('#main').innerHTML=`<div class="sectionhead"><h1>${map[t]}</h1><span class="meta">${a.length} itens</span></div><div class="grid">${a.map(card).join('')||'<div class="empty">Nenhum conteúdo encontrado.</div>'}</div>`;bindCards()}
-function nav(v){state.view=v;$('#sidebar').classList.remove('open');render()}
-function login(){
-  openModal(`<div class="form"><h2>👤 Minha conta</h2><label>Nome (somente para criar conta)</label><input id="ln" placeholder="Seu nome"><label>E-mail</label><input id="le" type="email" autocomplete="email" required><label>Senha</label><input id="lp" type="password" autocomplete="current-password" minlength="6" required><div class="row" style="margin-top:12px"><button class="primary" id="doLogin" type="button">🔵 Entrar</button><button class="green" id="doSignup" type="button">🟢 Criar conta</button></div><p class="small" id="authMsg">Use <b>Entrar</b> para uma conta existente ou <b>Criar conta</b> para uma conta nova.</p></div>`);
-  const msg=$('#authMsg'), loginBtn=$('#doLogin'), signupBtn=$('#doSignup');
-  const fields=()=>({name:$('#ln').value.trim()||'Utilizador',email:$('#le').value.trim().toLowerCase(),pass:$('#lp').value});
-  const busy=(on,label)=>{loginBtn.disabled=on;signupBtn.disabled=on;loginBtn.textContent=on?label:'🔵 Entrar';signupBtn.textContent=on?label:'🟢 Criar conta';};
-  loginBtn.onclick=async()=>{
-    const {email,pass}=fields();
-    if(!email)return toast('Digite o e-mail.');
-    if(pass.length<6)return toast('A senha precisa de 6 caracteres.');
-    try{
-      busy(true,'⏳ Aguarde...');
-      if(ONLINE){
-        const r=await sb.auth.signInWithPassword({email,password:pass});
-        if(r.error)throw r.error;
-        if(r.data.user)await profile(r.data.user);
-      }else{
-        const us=await lget('users');
-        const u=us.find(x=>x.email===email);
-        if(!u)throw Error('Conta não encontrada. Clique em Criar conta.');
-        if(u.password!==pass)throw Error('Senha incorreta.');
-        state.user={id:u.id,email:u.email};state.profile=u;localStorage.setItem('ima_v10_user',u.id);
-      }
-      closeModal();await render();
-    }catch(e){
-      console.error(e);
-      const m=e?.status===429||e?.code==='over_request_rate_limit'||/too many requests|rate limit/i.test(e?.message||'')?'Muitas tentativas. Aguarde alguns minutos e tente novamente.':(e?.message||'Falha ao entrar.');
-      msg.textContent=m;toast('❌ '+m);
-    }finally{busy(false);}
-  };
-  signupBtn.onclick=async()=>{
-    const {name,email,pass}=fields();
-    if(!email)return toast('Digite o e-mail.');
-    if(pass.length<6)return toast('A senha precisa de 6 caracteres.');
-    try{
-      busy(true,'⏳ Criando...');
-      if(ONLINE){
-        const r=await sb.auth.signUp({email,password:pass,options:{data:{name}}});
-        if(r.error)throw r.error;
-        if(r.data.session&&r.data.user)await profile(r.data.user);
-        else {msg.textContent='Conta criada. Verifique seu e-mail se a confirmação estiver ativada.';toast('✅ Conta criada.');return;}
-      }else{
-        const us=await lget('users');
-        if(us.some(x=>x.email===email))throw Error('Este e-mail já está cadastrado. Use Entrar.');
-        const u={id:uid(),name,email,password:pass,role:'seller'};await lput('users',u);state.user={id:u.id,email};state.profile=u;localStorage.setItem('ima_v10_user',u.id);
-      }
-      closeModal();await render();
-    }catch(e){
-      console.error(e);
-      const m=e?.status===429||e?.code==='over_request_rate_limit'||/too many requests|rate limit/i.test(e?.message||'')?'Muitas tentativas de cadastro. Aguarde alguns minutos e tente novamente.':(e?.message||'Falha ao criar conta.');
-      msg.textContent=m;toast('❌ '+m);
-    }finally{busy(false);}
-  };
+const C = window.IMA_CONFIG || {};
+const APP = 'I.M.A FILMES V10.1';
+
+const ONLINE = !!(
+  window.supabase &&
+  C.SUPABASE_URL &&
+  C.SUPABASE_ANON_KEY &&
+  !C.SUPABASE_URL.includes('COLOQUE_AQUI')
+);
+
+const sb = ONLINE
+  ? window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY)
+  : null;
+
+const BLOCKED = [
+  'pornografia',
+  'pornô',
+  'porno',
+  'porn',
+  'xxx',
+  'sexo explícito',
+  'sex explicit',
+  'nudez explícita'
+];
+
+let state = {
+  user: null,
+  profile: null,
+  view: 'home',
+  query: '',
+  contents: [],
+  favorites: new Set(),
+  progress: new Map(),
+  transactions: []
+};
+
+let localDB = null;
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+const esc = s =>
+  String(s ?? '').replace(
+    /[&<>"']/g,
+    c => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[c])
+  );
+
+function toast(text) {
+  const el = $('#toast');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
 }
-function openModal(h){$('#modalBody').innerHTML=h;$('#modal').classList.remove('hidden')}
-function closeModal(){$('#modal').classList.add('hidden');$('#modalBody').innerHTML=''}
-async function publishPage(){if(!state.user){$('#main').innerHTML='<div class="panel"><h2>Bem-vindo ao I.M.A FILMES</h2><p>Entre ou crie seu cadastro para começar.</p><button class="primary" id="li">Entrar / Criar conta</button></div>';$('#li').onclick=login;return}const name=state.profile?.name||'Vendedor';$('#main').innerHTML=`<div class="panel"><div class="profile"><img class="avatar" src="${esc(state.profile?.avatar_url||fallbackCover(name,'Perfil'))}"><div><h1>Bem-vindo, ${esc(name)} 👋</h1><p>O que vamos vender hoje?</p></div></div><div class="row" style="margin-top:20px"><button class="green" id="free">🟢 Publicar grátis</button><button class="primary" id="sell">🔵 Vender conteúdo</button></div></div>`;$('#free').onclick=()=>contentForm(true);$('#sell').onclick=()=>contentForm(false)}
-function contentForm(free){openModal(`<form id="cf" class="form"><h2>${free?'🟢 Publicação gratuita':'🔵 O que vamos vender hoje?'}</h2>${free?'':'<label>Categoria</label><select id="type"><option>Filme</option><option>Série</option><option>Anime</option><option>Dorama</option><option>E-book</option></select>'}<label>Nome</label><input id="title" required><label>Descrição</label><textarea id="desc"></textarea><label>Valor de venda (Kz)</label><input id="price" type="number" min="0" value="${free?0:800}"><label>Capa original (opcional)</label><input id="cover" type="file" accept="image/*"><label>Vídeo (filme/série/anime/dorama)</label><input id="video" type="file" accept="video/*"><label>E-book PDF/EPUB</label><input id="book" type="file" accept="application/pdf,.pdf,.epub"><div id="coverOptions"></div><button class="primary">Publicar</button></form>`);let covers=[];const show=()=>{$('#coverOptions').innerHTML='<label>Escolha uma das 5 capas geradas</label><div class="cover-options">'+covers.map((c,i)=>`<img src="${c}" data-c="${i}">`).join('')+'</div>';$$('[data-c]').forEach(z=>z.onclick=()=>{$$('#coverOptions img').forEach(q=>q.classList.remove('selected'));z.classList.add('selected');z.dataset.selected='1'})};$('#video').onchange=async e=>{covers=await autoCovers(e.target.files[0],$('#title').value||'I.M.A FILMES');show()};$('#title').oninput=async()=>{if($('#video').files[0]){covers=await autoCovers($('#video').files[0],$('#title').value);show()}};$('#cf').onsubmit=async e=>{e.preventDefault();try{const type=free?'Filme':$('#type').value,title=$('#title').value.trim(),desc=$('#desc').value.trim(),price=free?0:Number($('#price').value)||0;if(blocked(title+' '+desc))throw Error('Conteúdo não permitido.');const vf=$('#video').files[0],bf=$('#book').files[0],cf=$('#cover').files[0],chosen=$('#coverOptions img.selected')?.src||covers[0]||fallbackCover(title);if(type==='E-book'&&!bf&&!ONLINE)throw Error('Selecione o e-book.');if(ONLINE)await publishOnline({type,title,desc,price,vf,bf,cf,chosen});else await publishLocal({type,title,desc,price,vf,bf,cf,chosen});closeModal();toast('✅ Conteúdo enviado com sucesso.');await render()}catch(e){toast('❌ '+e.message)}}}
-async function publishOnline(o){let cover=o.chosen;if(o.cf)cover=await upload(C.STORAGE_COVER_BUCKET,`${state.user.id}/${uid()}-${o.cf.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`,o.cf);else if(cover.startsWith('data:'))cover=await upload(C.STORAGE_COVER_BUCKET,`${state.user.id}/${uid()}.jpg`,blobFromData(cover));let ebook=null;if(o.bf)ebook=await upload(C.STORAGE_EBOOK_BUCKET,`${state.user.id}/${uid()}-${o.bf.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`,o.bf);const c=await sb.from('contents').insert({owner_id:state.user.id,type:o.type,title:o.title,description:o.desc,price:o.price,free:o.price===0,cover_url:cover,ebook_url:ebook,status:'active'}).select().single();if(c.error)throw c.error;if(o.vf&&o.type!=='E-book'){const url=await upload(C.STORAGE_VIDEO_BUCKET,`${state.user.id}/${c.data.id}-${o.vf.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`,o.vf);const r=await sb.from('episodes').insert({content_id:c.data.id,season_no:1,episode_no:1,title:o.title,video_url:url});if(r.error)throw r.error}}
-async function publishLocal(o){let video=o.vf?await fileData(o.vf):'';let ebook=o.bf?await fileData(o.bf):'';await lput('contents',{id:uid(),owner_id:state.user.id,ownerName:state.profile.name,type:o.type,title:o.title,description:o.desc,price:o.price,free:o.price===0,cover:o.cf?await fileData(o.cf):o.chosen,video,ebook,status:'active',created_at:Date.now()})}
-async function fav(id){if(!state.user)return login();if(ONLINE){if(state.favorites.has(id))await sb.from('favorites').delete().eq('user_id',state.user.id).eq('content_id',id);else await sb.from('favorites').insert({user_id:state.user.id,content_id:id})}else{const f=(await lget('favorites')).find(x=>x.userId===state.user.id&&x.contentId===id);if(f)await ldel('favorites',f.id);else await lput('favorites',{id:uid(),userId:state.user.id,contentId:id})}await render()}
-async function buy(id){if(!state.user)return login();const x=state.contents.find(c=>String(c.id)===String(id));if(!x)return;if(x.free||Number(x.price)===0){toast('🎁 Conteúdo gratuito.');return play(id)}openModal(`<div class="form"><h2>🛒 Comprar: ${esc(x.title)}</h2><p>Valor: <b>${Number(x.price).toLocaleString('pt-AO')} Kz</b></p><label>Método de pagamento</label><select id="pm"><option value="multicaixa_express">Multicaixa Express</option><option value="bank_transfer">Transferência bancária</option><option value="platform">Plataforma</option></select><label>Comprovativo (opcional, se pagamento manual)</label><input id="proof" type="file" accept="image/*,application/pdf"><button class="green" id="pay">Continuar pagamento</button><p class="small">O pedido fica pendente até confirmação. A comissão da plataforma é calculada automaticamente em 10%.</p></div>`);$('#pay').onclick=async()=>{try{const pm=$('#pm').value;let proof=null;if($('#proof').files[0]&&ONLINE)proof=await upload(C.STORAGE_PAYMENT_BUCKET||'payments',`${state.user.id}/${uid()}-${$('#proof').files[0].name.replace(/[^a-zA-Z0-9._-]/g,'_')}`,$('#proof').files[0]);const gross=Number(x.price);if(ONLINE){const r=await sb.from('transactions').insert({buyer_id:state.user.id,seller_id:x.owner_id,content_id:x.id,amount:gross,payment_method:pm,payment_status:'pending',transaction_status:'pending'}).select().single();if(r.error)throw r.error;const pay=await sb.from('payments').insert({transaction_id:r.data.id,payer_id:state.user.id,amount:gross,method:pm,status:'pending',proof_url:proof}).select().single();if(pay.error)throw pay.error}else{const commission=+(gross*.10).toFixed(2);await lput('orders',{id:uid(),buyerId:state.user.id,sellerId:x.owner_id,contentId:x.id,title:x.title,grossAmount:gross,commissionAmount:commission,sellerNet:+(gross-commission).toFixed(2),paymentMethod:pm,paymentStatus:'pending',createdAt:Date.now()})}closeModal();toast('✅ Pedido criado. Aguarde a confirmação segura do pagamento.');await render()}catch(e){console.error(e);toast('❌ '+(e.message||'Falha ao criar pedido.'))}}}
-async function play(id){const x=state.contents.find(c=>String(c.id)===String(id));if(!x)return;if(x.type==='E-book'){if(x.ebook_url)window.open(x.ebook_url,'_blank');else if(x.ebook)window.open(x.ebook,'_blank');else toast('E-book sem arquivo.');return}let eps=[];if(ONLINE){const r=await sb.from('episodes').select('*').eq('content_id',id).order('season_no').order('episode_no');eps=r.data||[]}else if(x.video)eps=[{title:x.title,video_url:x.video}];if(!eps.length)return toast('Nenhum vídeo disponível.');openModal(`<h2>▶️ ${esc(x.title)}</h2><video class="video" id="player" controls playsinline></video><p class="small">Reprodução do conteúdo.</p>`);const v=$('#player');v.src=eps[0].video_url;v.onloadedmetadata=()=>{const p=state.progress.get(id);if(p)v.currentTime=Number(p.seconds)||0};v.ontimeupdate=()=>{if(Math.floor(v.currentTime)%5===0)saveProgress(id,v.currentTime,v.duration||0)}}
-async function saveProgress(id,s,d){if(!state.user)return;if(ONLINE)await sb.from('progress').upsert({user_id:state.user.id,content_id:id,seconds:s,duration:d,updated_at:new Date().toISOString()});else await lput('progress',{id:state.user.id+'_'+id,userId:state.user.id,contentId:id,seconds:s,duration:d})}
-function share(id){const u=location.href.split('#')[0]+'#content='+id;navigator.clipboard?.writeText(u);toast('🔗 Link copiado.')}
-function products(){const mine=state.contents.filter(x=>x.owner_id===state.user?.id);$('#main').innerHTML=`<div class="sectionhead"><h1>🛍️ Meus produtos</h1><button class="primary" id="newp">+ Novo produto</button></div><div class="grid">${mine.map(card).join('')||'<div class="empty">Você ainda não tem produtos.</div>'}</div>`;$('#newp').onclick=()=>nav('publish');bindCards()}
-function profits(){const mine=state.orders.filter(o=>(o.seller_id||o.sellerId)===state.user?.id&&o.payment_status!=='rejected');const gross=mine.reduce((s,o)=>s+Number(o.gross_amount||o.grossAmount||0),0),comm=mine.reduce((s,o)=>s+Number(o.commission_amount||o.commissionAmount||0),0),net=mine.reduce((s,o)=>s+Number(o.seller_net||o.sellerNet||0),0);$('#main').innerHTML=`<h1>💰 Meus lucros</h1><div class="stats"><div class="stat">Vendas<b>${mine.length}</b></div><div class="stat">Bruto<b>${gross.toLocaleString('pt-AO')} Kz</b></div><div class="stat">Comissão 10%<b>${comm.toLocaleString('pt-AO')} Kz</b></div><div class="stat">Líquido<b>${net.toLocaleString('pt-AO')} Kz</b></div></div><div class="panel"><p>A comissão de 10% é calculada sobre cada venda registrada.</p></div>`}
-function promote(){if(!state.user){login();return}$('#main').innerHTML=`<h1>🚀 Assinar para promover meus produtos</h1><div class="planGrid"><div class="plan"><h3>7 dias</h3><h2>800 Kz</h2><p>Até 2 vídeos na vitrine.</p><button class="primary" data-plan="7_dias">Assinar</button></div><div class="plan"><h3>30 dias</h3><h2>1.600 Kz</h2><p>Até 4 vídeos na vitrine.</p><button class="primary" data-plan="30_dias">Assinar</button></div></div>`;$$('[data-plan]').forEach(b=>b.onclick=()=>promotion(b.dataset.plan))}
-async function promotion(plan){if(!ONLINE){toast('A assinatura online será ativada quando o Supabase estiver ligado.');return}const cfg=plan==='7_dias'?['7 dias',7,800,2]:['30 dias',30,1600,4];openModal(`<div class="form"><h2>🚀 Plano ${cfg[0]}</h2><p>${cfg[2].toLocaleString('pt-AO')} Kz • até ${cfg[3]} vídeos</p><label>Método de pagamento</label><select id="ppm"><option value="multicaixa_express">Multicaixa Express</option><option value="bank_transfer">Transferência bancária</option></select><label>Comprovativo</label><input id="ppf" type="file" accept="image/*,application/pdf"><button class="green" id="ppay">Enviar assinatura</button></div>`);$('#ppay').onclick=async()=>{try{const {data:pl,error:pe}=await sb.from('promotion_plans').select('*').eq('duration_days',cfg[1]).eq('price',cfg[2]).eq('video_limit',cfg[3]).eq('active',true).single();if(pe)throw pe;const pm=$('#ppm').value;const r=await sb.from('promotions').insert({seller_id:state.user.id,plan_id:pl.id,payment_method:pm,payment_status:'pending',status:'pending'}).select().single();if(r.error)throw r.error;let proof=null;if($('#ppf').files[0])proof=await upload(C.STORAGE_PAYMENT_BUCKET||'payments',`${state.user.id}/${uid()}-${$('#ppf').files[0].name.replace(/[^a-zA-Z0-9._-]/g,'_')}`,$('#ppf').files[0]);const pay=await sb.from('payments').insert({payer_id:state.user.id,amount:cfg[2],method:pm,status:'pending',proof_url:proof,reference:`promotion:${r.data.id}`});if(pay.error)throw pay.error;closeModal();toast('✅ Assinatura enviada para validação administrativa.');await render()}catch(e){console.error(e);toast('❌ '+(e.message||'Falha na assinatura.'))}}}
-function library(){const a=[...state.progress.keys()].map(id=>state.contents.find(x=>String(x.id)===String(id))).filter(Boolean);$('#main').innerHTML='<h1>📥 Minha biblioteca</h1><div class="grid">'+(a.map(card).join('')||'<div class="empty">Sua biblioteca aparecerá aqui conforme assistir.</div>')+'</div>';bindCards()}
-function settings(){const p=state.profile||{};$('#main').innerHTML=`<div class="panel form"><h1>⚙️ Configurações</h1><div class="profile"><img class="avatar" src="${esc(p.avatar_url||fallbackCover(p.name||'Perfil','Perfil'))}"><div><b>${esc(p.name||'Visitante')}</b><div class="small">${ONLINE?'Online / Supabase':'Demonstração local'}</div></div></div><label>Foto de perfil</label><input id="avatar" type="file" accept="image/*"><button class="primary" id="saveAvatar">Guardar perfil</button>${state.user?'<button class="secondary" id="logout">Sair</button>':'<button class="primary" id="login">Entrar</button>'}</div>`;$('#saveAvatar').onclick=saveAvatar;$('#login')?.addEventListener('click',login);$('#logout')?.addEventListener('click',async()=>{if(ONLINE)await sb.auth.signOut();else{localStorage.removeItem('ima_v10_user');state.user=null;state.profile=null}await render()})}
-async function saveAvatar(){if(!state.user)return login();const f=$('#avatar').files[0];if(!f)return toast('Escolha uma foto.');try{const url=ONLINE?await upload(C.STORAGE_AVATAR_BUCKET,`${state.user.id}/${uid()}-${f.name}`,f):await fileData(f);if(ONLINE){const r=await sb.from('profiles').update({avatar_url:url}).eq('id',state.user.id);if(r.error)throw r.error}state.profile.avatar_url=url;if(!ONLINE){const u=(await lget('users')).find(x=>x.id===state.user.id);if(u){u.avatar_url=url;await lput('users',u)}}toast('✅ Perfil atualizado.');await render()}catch(e){toast('❌ '+e.message)}}
-async function adminLogin(){openModal(`<div class="form"><h2>🛡️ Área do administrador</h2><label>Nome do administrador</label><input id="an"><label>Senha</label><input id="ap" type="password"><button class="primary" id="ae">Entrar como administrador</button></div>`);$('#ae').onclick=async()=>{try{if(!state.user)throw Error('Entre primeiro com uma conta administrativa.');if(!state.profile||state.profile.role!=='admin')throw Error('Esta conta não possui permissão de administrador.');closeModal();state.admin=true;await admin()}catch(e){toast('❌ '+e.message)}}}
-async function confirmPayment(id){if(!ONLINE||!state.profile||state.profile.role!=='admin')return toast('Acesso administrativo necessário.');try{const tx=state.orders.find(x=>String(x.id)===String(id));if(!tx)return toast('Transação não encontrada.');const u=await sb.from('transactions').update({payment_status:'paid',transaction_status:'completed',paid_at:new Date().toISOString()}).eq('id',id);if(u.error)throw u.error;const p=await sb.from('payments').update({status:'confirmed',confirmed_at:new Date().toISOString()}).eq('transaction_id',id);if(p.error)console.warn('Pagamento:',p.error.message);const lib=await sb.from('library').insert({user_id:tx.buyer_id,content_id:tx.content_id,purchase_id:id});if(lib.error&&lib.error.code!=='23505')throw lib.error;const d=await sb.from('deliveries').insert({transaction_id:id,buyer_id:tx.buyer_id,seller_id:tx.seller_id,content_id:tx.content_id,status:'ready'});if(d.error)throw d.error;toast('✅ Pagamento confirmado e entrega liberada.');await render()}catch(e){console.error(e);toast('❌ '+(e.message||'Falha na confirmação.'))}}
-async function admin(){if(!state.profile||state.profile.role!=='admin'){adminLogin();return}let users=[];let allTx=state.orders;if(ONLINE){const ur=await sb.from('profiles').select('*');users=ur.data||[];const tr=await sb.from('transactions').select('*,contents(title),profiles: seller_id(name)').order('created_at',{ascending:false});allTx=tr.data||[];state.orders=allTx;const dr=await sb.from('deliveries').select('*,contents(title)').order('created_at',{ascending:false});state.deliveries=dr.data||[]}else users=await lget('users');const counts={Filme:0,Série:0,Anime:0,Dorama:0,'E-book':0};state.contents.forEach(x=>counts[x.type]=(counts[x.type]||0)+1);$('#main').innerHTML=`<div class="sectionhead"><h1>🛡️ Painel do Administrador</h1><button class="primary" id="showcase">📺 Postar na vitrine</button></div><div class="stats"><div class="stat">Vendedores<b>${users.filter(x=>x.role!=='admin').length}</b></div><div class="stat">Filmes<b>${counts.Filme}</b></div><div class="stat">Séries<b>${counts.Série}</b></div><div class="stat">Anime<b>${counts.Anime}</b></div><div class="stat">Doramas<b>${counts.Dorama}</b></div><div class="stat">E-books<b>${counts['E-book']}</b></div></div><div class="sectionhead"><h2>💳 Pagamentos pendentes</h2></div><div class="panel">${allTx.filter(o=>o.payment_status==='pending').map(o=>`<div style="padding:10px;border-bottom:1px solid #273149"><b>${esc(o.contents?.title||'Conteúdo')}</b> • ${Number(o.amount||0).toLocaleString('pt-AO')} Kz • ${esc(o.payment_method||'')} <button class="green" data-confirm="${o.id}">Confirmar pagamento</button></div>`).join('')||'<p class="small">Nenhum pagamento pendente.</p>'}</div><div class="sectionhead"><h2>📦 Entregas</h2></div><div class="panel">${state.deliveries.filter(d=>d.status!=='delivered').map(d=>`<div style="padding:10px;border-bottom:1px solid #273149">${esc(d.contents?.title||'Conteúdo')} • <b>${esc(d.status)}</b></div>`).join('')||'<p class="small">Sem entregas pendentes.</p>'}</div><div class="sectionhead"><h2>⭐ Produtos</h2></div><div class="grid">${state.contents.slice(0,8).map(card).join('')||'<div class="empty">Sem produtos.</div>'}</div>`;$('#showcase').onclick=showcase;$$('[data-confirm]').forEach(b=>b.onclick=()=>confirmPayment(b.dataset.confirm));bindCards()}
-function showcase(){openModal(`<div class="form"><h2>📺 Postar na vitrine</h2><p>Selecione até 4 conteúdos ativos. O sistema monta uma apresentação de 30 segundos em 3 partes de 10s.</p><label>Conteúdos</label><select id="sc" multiple size="8">${state.contents.map(x=>`<option value="${x.id}">${esc(x.title)} — ${esc(x.type)}</option>`).join('')}</select><button class="primary" id="make">Criar apresentação</button><div id="prev"></div><p class="small">A classificação automática por IA (ação/romance/suspense) requer processamento de vídeo no servidor; esta versão prepara a estrutura e a prévia por trechos.</p></div>`);$('#make').onclick=async()=>{const ids=[...$('#sc').selectedOptions].map(o=>o.value).slice(0,4),items=ids.map(id=>state.contents.find(x=>String(x.id)===String(id))).filter(Boolean);$('#prev').innerHTML='<div class="previewStrip">'+items.map((x,i)=>`<div class="previewPart"><b>${i===0?'AÇÃO 10s':i===1?'ROMANCE 10s':'SUSPENSE 10s'}</b><img class="cover" src="${esc(x.cover_url||x.cover||fallbackCover(x.title,i))}"><p>${esc(x.title)}</p></div>`).join('')+'</div>';toast('✅ Vitrine preparada. Para IA real, ligue o processador de vídeo ao backend.')}}
-async function render(){try{await load();$('#userName').textContent=state.profile?.name||'Visitante';$$('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));switch(state.view){case'films':catalog('Filme');break;case'series':catalog('Série');break;case'anime':catalog('Anime');break;case'dorama':catalog('Dorama');break;case'ebooks':catalog('E-book');break;case'favorites':catalog(null);break;case'publish':await publishPage();break;case'products':products();break;case'profits':profits();break;case'promote':promote();break;case'library':library();break;case'settings':settings();break;case'admin':await admin();break;default:home()}}catch(e){console.error(e);$('#main').innerHTML=`<div class="panel"><h2>❌ Erro</h2><p>${esc(e.message||e)}</p></div>`}}
-$('#closeModal').onclick=closeModal;$('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};$('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');$('#settingsBtn').onclick=()=>nav('settings');$('#userBtn').onclick=()=>state.user?nav('settings'):login();$('#search').oninput=e=>{state.query=e.target.value.trim();if(state.query.toLowerCase()==='isidores')nav('admin');else render()};$('#searchBtn').onclick=()=>{if(state.query.toLowerCase().includes('isidores'))nav('admin');else render()};$$('nav button').forEach(b=>b.onclick=()=>nav(b.dataset.view));
-(async()=>{try{await init();await render();console.log('✅ I.M.A FILMES V10 iniciado:',ONLINE?'ONLINE':'LOCAL')}catch(e){console.error(e)}})();
+
+function uid() {
+  return crypto.randomUUID
+    ? crypto.randomUUID()
+    : Date.now() + '-' + Math.random().toString(16).slice(2);
+}
+
+function isBlocked(text) {
+  const t = String(text || '').toLowerCase();
+  return BLOCKED.some(w => t.includes(w));
+}
+
+/* =========================================================
+   CAPAS AUTOMÁTICAS
+========================================================= */
+
+function fallbackCover(title, n = 0) {
+  const c = document.createElement('canvas');
+  c.width = 640;
+  c.height = 360;
+
+  const g = c.getContext('2d');
+
+  const bg = [
+    '#0f172a',
+    '#172554',
+    '#164e63',
+    '#312e81',
+    '#111827'
+  ][n % 5];
+
+  g.fillStyle = bg;
+  g.fillRect(0, 0, c.width, c.height);
+
+  g.fillStyle = '#fff';
+  g.font = 'bold 34px Arial';
+  g.fillText('🎬 I.M.A FILMES', 30, 75);
+
+  g.font = 'bold 25px Arial';
+  g.fillText(
+    String(title || 'I.M.A FILMES').slice(0, 30),
+    30,
+    145
+  );
+
+  g.font = '16px Arial';
+  g.fillStyle = '#93c5fd';
+  g.fillText('Capa automática ' + (n + 1), 30, 185);
+
+  return c.toDataURL('image/jpeg', 0.86);
+}
+
+function autoCovers(file, title) {
+  return new Promise(resolve => {
+    const fallback = [0, 1, 2, 3, 4].map(i =>
+      fallbackCover(title, i)
+    );
+
+    if (!file || !file.type.startsWith('video/')) {
+      resolve(fallback);
+      return;
+    }
+
+    const v = document.createElement('video');
+    v.muted = true;
+    v.preload = 'metadata';
+
+    const objectUrl = URL.createObjectURL(file);
+    v.src = objectUrl;
+
+    v.onloadedmetadata = () => {
+      const d =
+        isFinite(v.duration) && v.duration > 0
+          ? v.duration
+          : 10;
+
+      const times = [.05, .2, .4, .6, .8].map(p =>
+        Math.max(
+          .1,
+          Math.min(
+            Math.max(.2, d - .1),
+            d * p
+          )
+        )
+      );
+
+      const c = document.createElement('canvas');
+      c.width = 640;
+      c.height = 360;
+
+      const out = [];
+      let i = 0;
+
+      v.onseeked = () => {
+        try {
+          c.getContext('2d').drawImage(
+            v,
+            0,
+            0,
+            640,
+            360
+          );
+
+          out.push(
+            c.toDataURL('image/jpeg', 0.86)
+          );
+
+          i++;
+
+          if (i < times.length) {
+            v.currentTime = times[i];
+          } else {
+            URL.revokeObjectURL(objectUrl);
+            resolve(
+              out.length === 5
+                ? out
+                : fallback
+            );
+          }
+        } catch (e) {
+          URL.revokeObjectURL(objectUrl);
+          resolve(fallback);
+        }
+      };
+
+      v.currentTime = times[0];
+    };
+
+    v.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(fallback);
+    };
+  });
+}
+
+/* =========================================================
+   CONVERSÃO DE ARQUIVOS
+========================================================= */
+
+function fileData(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve('');
+      return;
+    }
+
+    const r = new FileReader();
+
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+
+    r.readAsDataURL(file);
+  });
+}
+
+function blobFromData(data) {
+  if (data instanceof Blob) return data;
+
+  if (typeof data !== 'string') return null;
+
+  const p = data.split(',');
+
+  if (p.length < 2) return null;
+
+  const mime =
+    (p[0].match(/data:([^;]+)/) || [])[1] ||
+    'application/octet-stream';
+
+  const bin = atob(p[1]);
+  const a = new Uint8Array(bin.length);
+
+  for (let i = 0; i < bin.length; i++) {
+    a[i] = bin.charCodeAt(i);
+  }
+
+  return new Blob([a], { type: mime });
+}
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+function openModal(html) {
+  $('#modalBody').innerHTML = html;
+  $('#modal').classList.remove('hidden');
+}
+
+function closeModal() {
+  $('#modal').classList.add('hidden');
+  $('#modalBody').innerHTML = '';
+}
+
+/* =========================================================
+   SUPABASE STORAGE
+   IMPORTANTE:
+   vídeos e ebooks são PRIVADOS.
+========================================================= */
+
+async function uploadPrivate(bucket, path, file, contentType) {
+  if (!sb) {
+    throw new Error('Supabase não está configurado.');
+  }
+
+  const { error } = await sb.storage
+    .from(bucket)
+    .upload(
+      path,
+      file,
+      {
+        contentType:
+          contentType ||
+          file.type ||
+          'application/octet-stream',
+        upsert: false
+      }
+    );
+
+  if (error) throw error;
+
+  return path;
+}
+
+async function uploadPublic(bucket, path, file, contentType) {
+  if (!sb) {
+    throw new Error('Supabase não está configurado.');
+  }
+
+  const { error } = await sb.storage
+    .from(bucket)
+    .upload(
+      path,
+      file,
+      {
+        contentType:
+          contentType ||
+          file.type ||
+          'application/octet-stream',
+        upsert: false
+      }
+    );
+
+  if (error) throw error;
+
+  const { data } = sb.storage
+    .from(bucket)
+    .getPublicUrl(path);
+
+  return data.publicUrl;
+}
+
+async function signedUrl(bucket, path, expires = 3600) {
+  if (!path || typeof path !== 'string') {
+    return '';
+  }
+
+  if (
+    path.startsWith('http://') ||
+    path.startsWith('https://')
+  ) {
+    return path;
+  }
+
+  const { data, error } = await sb.storage
+    .from(bucket)
+    .createSignedUrl(path, expires);
+
+  if (error) {
+    console.warn(
+      'Erro ao criar URL assinada:',
+      error.message
+    );
+    return '';
+  }
+
+  return data?.signedUrl || '';
+}
