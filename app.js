@@ -155,7 +155,7 @@ async function initAuth(){
  if(state.user)await loadProfile();await loadData();render();
  sb.auth.onAuthStateChange(async(_event,session)=>{state.user=session?.user||null;if(state.user)await loadProfile();else state.profile=null;await loadData();render()});
 }
-function saveLocal(){try{localStorage.setItem("IMA_FILMES_V10_LOCAL",JSON.stringify(state.contents.map(x=>({...x,video_file:null,ebook_file:null})))}catch(e){console.warn(e)}}
+function saveLocal(){try{localStorage.setItem("IMA_FILMES_V10_LOCAL",JSON.stringify(state.contents.map(x=>({...x,video_file:null,ebook_file:null}))))}catch(e){console.warn(e)}}
 function loadLocal(){try{const a=JSON.parse(localStorage.getItem("IMA_FILMES_V10_LOCAL")||"[]");state.contents=Array.isArray(a)?a:[]}catch(e){state.contents=[]}}
 function loginModal(){openModal(`<div class="modal-professional"><div class="modal-icon">👤</div><h2>Entrar na I.M.A FILMES</h2><label>E-mail<input id="loginEmail" type="email" placeholder="seu@email.com"></label><label>Senha<input id="loginPassword" type="password" placeholder="Sua senha"></label><button class="ima-btn ima-btn-primary" onclick="performLogin()">🔐 Entrar</button><button class="ima-btn" onclick="registerModal()">📝 Criar conta</button></div>`)}
 async function performLogin(){const email=$("#loginEmail")?.value.trim(),password=$("#loginPassword")?.value;if(!email||!password)return toast("Preencha e-mail e senha.");if(!sb)return toast("Supabase não está configurado.");const r=await sb.auth.signInWithPassword({email,password});if(r.error)return toast(r.error.message);closeModal();toast("✅ Login realizado.");}
