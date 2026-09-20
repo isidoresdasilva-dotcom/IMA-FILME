@@ -51,7 +51,7 @@ async function publishOnline(d){
   if(d.cover)coverUrl=await uploadPublic(coverBucket,`${state.user.id}/${id}-${safeFileName(d.cover.name)}`,d.cover);
   let ebookPath=null;
   if(d.ebook)ebookPath=await uploadPrivate(ebookBucket,`${state.user.id}/${id}-${safeFileName(d.ebook.name)}`,d.ebook);
-  const row={id,owner_id:state.user.id,title:d.title,description:d.description,type:d.type,price:d.price,free:d.free,cover_url:coverUrl,ebook_url:ebookPath,status:"published"};
+  const row={id,owner_id:state.user.id,title:d.title,description:d.description,type:d.type,price:d.price,free:d.free,cover_url:coverUrl,ebook_url:ebookPath,status:"active"};
   const r=await sb.from("contents").insert(row);
   if(r.error)throw r.error;
   if(d.video){
@@ -61,7 +61,7 @@ async function publishOnline(d){
   }
   await loadData();
 }
-async function publishLocal(d){const item={id:uid(),owner_id:state.user?.id||"local",ownerName:state.profile?.name||"Meu perfil",title:d.title,description:d.description,type:d.type,price:d.price,free:d.free,status:"published",cover_url:d.cover?await fileToDataUrl(d.cover):fallbackCover(d.title),video_file:d.video?await fileToDataUrl(d.video):null,ebook_file:d.ebook?await fileToDataUrl(d.ebook):null,created_at:new Date().toISOString()};state.contents.unshift(item);localStorage.setItem("IMA_FILMES_V10_LOCAL",JSON.stringify(state.contents.map(x=>({...x,video_file:null,ebook_file:null}))))}
+async function publishLocal(d){const item={id:uid(),owner_id:state.user?.id||"local",ownerName:state.profile?.name||"Meu perfil",title:d.title,description:d.description,type:d.type,price:d.price,free:d.free,status:"active",cover_url:d.cover?await fileToDataUrl(d.cover):fallbackCover(d.title),video_file:d.video?await fileToDataUrl(d.video):null,ebook_file:d.ebook?await fileToDataUrl(d.ebook):null,created_at:new Date().toISOString()};state.contents.unshift(item);localStorage.setItem("IMA_FILMES_V10_LOCAL",JSON.stringify(state.contents.map(x=>({...x,video_file:null,ebook_file:null}))))}
 function fileToDataUrl(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(f)})}
 function productsPage(){const a=state.contents.filter(x=>x.owner_id===state.user?.id||(!ONLINE&&x.owner_id==="local"));$("#main").innerHTML=`<div class="page-title"><span class="page-icon">🛍️</span><div><h1>Meus produtos</h1><p>Gerencie seus conteúdos.</p></div></div><div class="stats-row"><div class="stat-card">📦<strong>${a.length}</strong><small>Produtos</small></div><div class="stat-card">🟢<strong>${a.filter(x=>x.status==="published").length}</strong><small>Publicados</small></div><div class="stat-card">💰<strong>${a.filter(x=>Number(x.price)>0).length}</strong><small>À venda</small></div></div><div class="grid">${a.length?a.map(card).join(""):`<div style="grid-column:1/-1">${empty("Você ainda não publicou produtos.")}</div>`}</div>`;bindCards()}
 function profitsPage(){const a=state.transactions.filter(x=>x.seller_id===state.user?.id),g=a.reduce((s,x)=>s+Number(x.amount||x.gross_amount||0),0);$("#main").innerHTML=`<div class="page-title"><span class="page-icon">💰</span><div><h1>Meus lucros</h1><p>Resumo financeiro.</p></div></div><div class="stats-row"><div class="stat-card">💵<strong>${g.toLocaleString("pt-AO")} Kz</strong><small>Vendas</small></div><div class="stat-card">📊<strong>${(g*.1).toLocaleString("pt-AO")} Kz</strong><small>Comissão</small></div><div class="stat-card">💰<strong>${(g*.9).toLocaleString("pt-AO")} Kz</strong><small>Receita estimada</small></div></div>`}
