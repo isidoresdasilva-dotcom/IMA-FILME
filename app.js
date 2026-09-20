@@ -1,7 +1,7 @@
 /* I.M.A FILMES V10.3.1 — STORAGE + BLOB FIX */
-const APP_VERSION="10.3.1";
+const APP_VERSION="10.3.3";
 const C=window.IMA_CONFIG||{};
-const APP="I.M.A FILMES V10.3.1";
+const APP="I.M.A FILMES V10.3.3";
 const ONLINE=!!(window.supabase&&C.SUPABASE_URL&&C.SUPABASE_ANON_KEY);
 const sb=ONLINE?window.supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY):null;
 const state={user:null,profile:null,view:"home",query:"",contents:[],favorites:new Set(),progress:new Map(),transactions:[]};
@@ -12,6 +12,10 @@ function toast(msg){const e=$("#toast");if(!e)return;e.textContent=msg;e.classLi
 function isBlobUrl(v){return typeof v==="string"&&/^blob:/i.test(v)}
 function safeImageUrl(v,title){return v&&!isBlobUrl(v)?v:fallbackCover(title)}
 function fallbackCover(title,n=0){const c=document.createElement("canvas");c.width=640;c.height=360;const x=c.getContext("2d");x.fillStyle=["#07111f","#101b38","#102a43","#24154f","#111827"][n%5];x.fillRect(0,0,640,360);x.fillStyle="#fff";x.font="bold 34px Arial";x.fillText("🎬 I.M.A FILMES",30,70);x.font="bold 24px Arial";x.fillText(String(title||"I.M.A FILMES").slice(0,30),30,135);x.font="16px Arial";x.fillStyle="#93c5fd";x.fillText("Marketplace Digital",30,175);return c.toDataURL("image/jpeg",.88)}
+function normalizeContentType(t){
+  const m={filme:"Filme",serie:"Série",série:"Série",anime:"Anime",dorama:"Dorama",ebook:"E-book","e-book":"E-book"};
+  return m[String(t||"").toLowerCase()]||String(t||"");
+}
 function safeFileName(n){return String(n||"arquivo").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"_")}
 function openModal(h){const m=$("#modal"),b=$("#modalBody");if(!m||!b)return;b.innerHTML=h;m.classList.remove("hidden")}
 function closeModal(){$("#modal")?.classList.add("hidden")}
@@ -51,7 +55,7 @@ async function publishOnline(d){
   if(d.cover)coverUrl=await uploadPublic(coverBucket,`${state.user.id}/${id}-${safeFileName(d.cover.name)}`,d.cover);
   let ebookPath=null;
   if(d.ebook)ebookPath=await uploadPrivate(ebookBucket,`${state.user.id}/${id}-${safeFileName(d.ebook.name)}`,d.ebook);
-  const row={id,owner_id:state.user.id,title:d.title,description:d.description,type:d.type,price:d.price,free:d.free,cover_url:coverUrl,ebook_url:ebookPath,status:"active"};
+  const row={id,owner_id:state.user.id,title:d.title,description:d.description,type:normalizeContentType(d.type),price:d.price,free:d.free,cover_url:coverUrl,ebook_url:ebookPath,status:"active"};
   const r=await sb.from("contents").insert(row);
   if(r.error)throw r.error;
   if(d.video){
@@ -61,7 +65,7 @@ async function publishOnline(d){
   }
   await loadData();
 }
-async function publishLocal(d){const item={id:uid(),owner_id:state.user?.id||"local",ownerName:state.profile?.name||"Meu perfil",title:d.title,description:d.description,type:d.type,price:d.price,free:d.free,status:"active",cover_url:d.cover?await fileToDataUrl(d.cover):fallbackCover(d.title),video_file:d.video?await fileToDataUrl(d.video):null,ebook_file:d.ebook?await fileToDataUrl(d.ebook):null,created_at:new Date().toISOString()};state.contents.unshift(item);localStorage.setItem("IMA_FILMES_V10_LOCAL",JSON.stringify(state.contents.map(x=>({...x,video_file:null,ebook_file:null}))))}
+async function publishLocal(d){const item={id:uid(),owner_id:state.user?.id||"local",ownerName:state.profile?.name||"Meu perfil",title:d.title,description:d.description,type:normalizeContentType(d.type),price:d.price,free:d.free,status:"active",cover_url:d.cover?await fileToDataUrl(d.cover):fallbackCover(d.title),video_file:d.video?await fileToDataUrl(d.video):null,ebook_file:d.ebook?await fileToDataUrl(d.ebook):null,created_at:new Date().toISOString()};state.contents.unshift(item);localStorage.setItem("IMA_FILMES_V10_LOCAL",JSON.stringify(state.contents.map(x=>({...x,video_file:null,ebook_file:null}))))}
 function fileToDataUrl(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(f)})}
 function productsPage(){const a=state.contents.filter(x=>x.owner_id===state.user?.id||(!ONLINE&&x.owner_id==="local"));$("#main").innerHTML=`<div class="page-title"><span class="page-icon">🛍️</span><div><h1>Meus produtos</h1><p>Gerencie seus conteúdos.</p></div></div><div class="stats-row"><div class="stat-card">📦<strong>${a.length}</strong><small>Produtos</small></div><div class="stat-card">🟢<strong>${a.filter(x=>x.status==="published").length}</strong><small>Publicados</small></div><div class="stat-card">💰<strong>${a.filter(x=>Number(x.price)>0).length}</strong><small>À venda</small></div></div><div class="grid">${a.length?a.map(card).join(""):`<div style="grid-column:1/-1">${empty("Você ainda não publicou produtos.")}</div>`}</div>`;bindCards()}
 function profitsPage(){const a=state.transactions.filter(x=>x.seller_id===state.user?.id),g=a.reduce((s,x)=>s+Number(x.amount||x.gross_amount||0),0);$("#main").innerHTML=`<div class="page-title"><span class="page-icon">💰</span><div><h1>Meus lucros</h1><p>Resumo financeiro.</p></div></div><div class="stats-row"><div class="stat-card">💵<strong>${g.toLocaleString("pt-AO")} Kz</strong><small>Vendas</small></div><div class="stat-card">📊<strong>${(g*.1).toLocaleString("pt-AO")} Kz</strong><small>Comissão</small></div><div class="stat-card">💰<strong>${(g*.9).toLocaleString("pt-AO")} Kz</strong><small>Receita estimada</small></div></div>`}
