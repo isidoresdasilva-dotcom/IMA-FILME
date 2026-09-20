@@ -1,5 +1,5 @@
-/* I.M.A FILMES V10.3.1 — STORAGE + BLOB FIX */
-const APP_VERSION="10.3.3";
+/* I.M.A FILMES V10.3.4 — TYPE VERIFIED + STORAGE + BLOB FIX */
+const APP_VERSION="10.3.4";
 const C=window.IMA_CONFIG||{};
 const APP="I.M.A FILMES V10.3.3";
 const ONLINE=!!(window.supabase&&C.SUPABASE_URL&&C.SUPABASE_ANON_KEY);
@@ -14,7 +14,10 @@ function safeImageUrl(v,title){return v&&!isBlobUrl(v)?v:fallbackCover(title)}
 function fallbackCover(title,n=0){const c=document.createElement("canvas");c.width=640;c.height=360;const x=c.getContext("2d");x.fillStyle=["#07111f","#101b38","#102a43","#24154f","#111827"][n%5];x.fillRect(0,0,640,360);x.fillStyle="#fff";x.font="bold 34px Arial";x.fillText("🎬 I.M.A FILMES",30,70);x.font="bold 24px Arial";x.fillText(String(title||"I.M.A FILMES").slice(0,30),30,135);x.font="16px Arial";x.fillStyle="#93c5fd";x.fillText("Marketplace Digital",30,175);return c.toDataURL("image/jpeg",.88)}
 function normalizeContentType(t){
   const m={filme:"Filme",serie:"Série",série:"Série",anime:"Anime",dorama:"Dorama",ebook:"E-book","e-book":"E-book"};
-  return m[String(t||"").toLowerCase()]||String(t||"");
+  const raw=String(t||"").trim();
+  const normalized=m[raw.toLowerCase()];
+  if(!normalized) throw new Error("Tipo de conteúdo inválido. Escolha Filme, Série, Anime, Dorama ou E-book.");
+  return normalized;
 }
 function safeFileName(n){return String(n||"arquivo").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"_")}
 function openModal(h){const m=$("#modal"),b=$("#modalBody");if(!m||!b)return;b.innerHTML=h;m.classList.remove("hidden")}
@@ -22,7 +25,7 @@ function closeModal(){$("#modal")?.classList.add("hidden")}
 function nav(v){state.view=v;$("#sidebar")?.classList.remove("open");render()}
 function toggleMenu(){$("#sidebar")?.classList.toggle("open")}
 function navButton(v,i,l){return `<button class="ima-nav-button ${state.view===v?"active":""}" data-view="${v}"><span class="ima-nav-icon">${i}</span><span class="ima-nav-label">${l}</span><span class="ima-nav-arrow">›</span></button>`}
-function renderNavigation(){const s=$("#sidebar");if(!s)return;s.innerHTML=`<div class="ima-sidebar-head"><div class="ima-logo">🎬</div><div><strong>I.M.A FILMES</strong><small>Marketplace Digital</small></div><button id="closeSidebar" class="icon-btn">×</button></div><div class="ima-user-box"><div class="ima-avatar">👤</div><div><strong>${esc(state.profile?.name||state.user?.email||"Visitante")}</strong><small>${state.user?"Conta conectada":"Modo visitante"}</small></div></div><nav class="ima-navigation"><div class="ima-nav-title">NAVEGAÇÃO</div>${navButton("home","🏠","Início")}${navButton("films","🎬","Filmes")}${navButton("series","📺","Séries")}${navButton("anime","🍥","Anime")}${navButton("doramas","🌸","Doramas")}${navButton("ebooks","📚","E-books")}${navButton("favorites","❤️","Favoritos")}<div class="ima-nav-title">CRIADOR</div>${navButton("publish","⬆️","Publicar conteúdo")}${navButton("products","🛍️","Meus produtos")}${navButton("profits","💰","Meus lucros")}${navButton("promote","🚀","Promover produtos")}${navButton("library","📥","Minha biblioteca")}<div class="ima-nav-title">CONTA</div>${navButton("settings","⚙️","Configurações")}${navButton("admin","🛡️","Administrador")}</nav><div class="ima-sidebar-footer"><span class="${ONLINE?"online-dot":"offline-dot"}"></span>${ONLINE?"Sistema online":"Modo local"}<br>V10.3.1 • I.M.A FILMES</div>`;$("#closeSidebar").onclick=toggleMenu;$$(".ima-nav-button").forEach(b=>b.onclick=()=>nav(b.dataset.view))}
+function renderNavigation(){const s=$("#sidebar");if(!s)return;s.innerHTML=`<div class="ima-sidebar-head"><div class="ima-logo">🎬</div><div><strong>I.M.A FILMES</strong><small>Marketplace Digital</small></div><button id="closeSidebar" class="icon-btn">×</button></div><div class="ima-user-box"><div class="ima-avatar">👤</div><div><strong>${esc(state.profile?.name||state.user?.email||"Visitante")}</strong><small>${state.user?"Conta conectada":"Modo visitante"}</small></div></div><nav class="ima-navigation"><div class="ima-nav-title">NAVEGAÇÃO</div>${navButton("home","🏠","Início")}${navButton("films","🎬","Filmes")}${navButton("series","📺","Séries")}${navButton("anime","🍥","Anime")}${navButton("doramas","🌸","Doramas")}${navButton("ebooks","📚","E-books")}${navButton("favorites","❤️","Favoritos")}<div class="ima-nav-title">CRIADOR</div>${navButton("publish","⬆️","Publicar conteúdo")}${navButton("products","🛍️","Meus produtos")}${navButton("profits","💰","Meus lucros")}${navButton("promote","🚀","Promover produtos")}${navButton("library","📥","Minha biblioteca")}<div class="ima-nav-title">CONTA</div>${navButton("settings","⚙️","Configurações")}${navButton("admin","🛡️","Administrador")}</nav><div class="ima-sidebar-footer"><span class="${ONLINE?"online-dot":"offline-dot"}"></span>${ONLINE?"Sistema online":"Modo local"}<br>V10.3.4 • I.M.A FILMES</div>`;$("#closeSidebar").onclick=toggleMenu;$$(".ima-nav-button").forEach(b=>b.onclick=()=>nav(b.dataset.view))}
 function card(x){const title=x.title||"Sem título",cover=safeImageUrl(x.cover_url||x.cover,title),free=x.free===true||Number(x.price||0)===0;return `<article class="card"><div class="card-media"><img class="cover" src="${esc(cover)}" alt="${esc(title)}" onerror="this.onerror=null;this.src='${fallbackCover(title).replace(/'/g,"%27")}'"><span class="card-type">${esc(x.type||"Conteúdo")}</span><span class="price ${free?"free":""}">${free?"GRÁTIS":Number(x.price).toLocaleString("pt-AO")+" Kz"}</span></div><div class="cardbody"><h3>${esc(title)}</h3><div class="meta">${esc(x.profiles?.name||x.ownerName||"")}</div><p class="desc">${esc(x.description||"Conteúdo disponível na I.M.A FILMES.")}</p><div class="actions"><button class="ima-btn ima-btn-primary" data-play="${esc(x.id)}">▶ Assistir</button><button class="ima-btn ima-btn-icon" data-fav="${esc(x.id)}">${state.favorites.has(x.id)?"❤️":"♡"}</button><button class="ima-btn ima-btn-icon" data-dl="${esc(x.id)}">↓</button><button class="ima-btn ima-btn-icon" data-share="${esc(x.id)}">↗</button></div></div></article>`}
 function bindCards(){$$("[data-play]").forEach(b=>b.onclick=()=>play(b.dataset.play));$$("[data-fav]").forEach(b=>b.onclick=()=>toggleFav(b.dataset.fav));$$("[data-dl]").forEach(b=>b.onclick=()=>download(b.dataset.dl));$$("[data-share]").forEach(b=>b.onclick=()=>share(b.dataset.share))}
 function filtered(k=null){let a=[...state.contents].filter(x=>x&&x.status!=="removed"&&!isBlobUrl(x.cover_url));if(k==="films")a=a.filter(x=>/filme/i.test(x.type||""));if(k==="series")a=a.filter(x=>/s[ée]rie/i.test(x.type||""));if(k==="anime")a=a.filter(x=>/anime/i.test(x.type||""));if(k==="doramas")a=a.filter(x=>/dorama/i.test(x.type||""));if(k==="ebooks")a=a.filter(x=>/e-?book/i.test(x.type||""));if(k==="favorites")a=a.filter(x=>state.favorites.has(x.id));const q=state.query.toLowerCase().trim();if(q)a=a.filter(x=>[x.title,x.description,x.type].join(" ").toLowerCase().includes(q));return a}
@@ -50,12 +53,12 @@ async function uploadPrivate(bucket,path,file){
   return path;
 }
 async function publishOnline(d){
-  const id=uid(),coverBucket=C.STORAGE_COVER_BUCKET||"capas",videoBucket=C.STORAGE_VIDEO_BUCKET||"videos",ebookBucket=C.STORAGE_EBOOK_BUCKET||"ebooks";
+  const id=uid(),contentType=normalizeContentType(d.type),coverBucket=C.STORAGE_COVER_BUCKET||"capas",videoBucket=C.STORAGE_VIDEO_BUCKET||"videos",ebookBucket=C.STORAGE_EBOOK_BUCKET||"ebooks";
   let coverUrl=fallbackCover(d.title);
   if(d.cover)coverUrl=await uploadPublic(coverBucket,`${state.user.id}/${id}-${safeFileName(d.cover.name)}`,d.cover);
   let ebookPath=null;
   if(d.ebook)ebookPath=await uploadPrivate(ebookBucket,`${state.user.id}/${id}-${safeFileName(d.ebook.name)}`,d.ebook);
-  const row={id,owner_id:state.user.id,title:d.title,description:d.description,type:normalizeContentType(d.type),price:d.price,free:d.free,cover_url:coverUrl,ebook_url:ebookPath,status:"active"};
+  const row={id,owner_id:state.user.id,title:d.title,description:d.description,type:contentType,price:d.price,free:d.free,cover_url:coverUrl,ebook_url:ebookPath,status:"active"};
   const r=await sb.from("contents").insert(row);
   if(r.error)throw r.error;
   if(d.video){
@@ -103,4 +106,4 @@ function scrubBlobDom(){
 }
 
 $("#menuBtn").onclick=toggleMenu;$("#settingsBtn").onclick=()=>nav("settings");$("#profileBtn").onclick=()=>state.user?nav("settings"):loginModal();document.addEventListener("click",e=>{if(e.target.matches("[data-close-modal]"))closeModal()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});Object.assign(window,{nav,toggleMenu,closeModal,loginModal,registerModal,performLogin,performRegister,logout,saveProfile});
-document.addEventListener("DOMContentLoaded",()=>{scrubBlobDom();render();initAuth();setTimeout(scrubBlobDom,500);setTimeout(scrubBlobDom,2000);console.log("✅ I.M.A FILMES V10.2 iniciado:",ONLINE?"ONLINE":"LOCAL","| versão",APP_VERSION)});
+document.addEventListener("DOMContentLoaded",()=>{scrubBlobDom();render();initAuth();setTimeout(scrubBlobDom,500);setTimeout(scrubBlobDom,2000);console.log("✅ "+APP+" iniciado:",ONLINE?"ONLINE":"LOCAL","| versão",APP_VERSION)});
