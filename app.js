@@ -1,7 +1,7 @@
-/* I.M.A FILMES V10.3.4 — TYPE VERIFIED + STORAGE + BLOB FIX */
-const APP_VERSION="10.3.4";
+/* I.M.A FILMES V10.3.5 — TYPE VERIFIED + STORAGE RESILIENT + CACHE FIX */
+const APP_VERSION="10.3.5";
 const C=window.IMA_CONFIG||{};
-const APP="I.M.A FILMES V10.3.3";
+const APP="I.M.A FILMES V10.3.5";
 const ONLINE=!!(window.supabase&&C.SUPABASE_URL&&C.SUPABASE_ANON_KEY);
 const sb=ONLINE?window.supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY):null;
 const state={user:null,profile:null,view:"home",query:"",contents:[],favorites:new Set(),progress:new Map(),transactions:[]};
@@ -25,7 +25,7 @@ function closeModal(){$("#modal")?.classList.add("hidden")}
 function nav(v){state.view=v;$("#sidebar")?.classList.remove("open");render()}
 function toggleMenu(){$("#sidebar")?.classList.toggle("open")}
 function navButton(v,i,l){return `<button class="ima-nav-button ${state.view===v?"active":""}" data-view="${v}"><span class="ima-nav-icon">${i}</span><span class="ima-nav-label">${l}</span><span class="ima-nav-arrow">›</span></button>`}
-function renderNavigation(){const s=$("#sidebar");if(!s)return;s.innerHTML=`<div class="ima-sidebar-head"><div class="ima-logo">🎬</div><div><strong>I.M.A FILMES</strong><small>Marketplace Digital</small></div><button id="closeSidebar" class="icon-btn">×</button></div><div class="ima-user-box"><div class="ima-avatar">👤</div><div><strong>${esc(state.profile?.name||state.user?.email||"Visitante")}</strong><small>${state.user?"Conta conectada":"Modo visitante"}</small></div></div><nav class="ima-navigation"><div class="ima-nav-title">NAVEGAÇÃO</div>${navButton("home","🏠","Início")}${navButton("films","🎬","Filmes")}${navButton("series","📺","Séries")}${navButton("anime","🍥","Anime")}${navButton("doramas","🌸","Doramas")}${navButton("ebooks","📚","E-books")}${navButton("favorites","❤️","Favoritos")}<div class="ima-nav-title">CRIADOR</div>${navButton("publish","⬆️","Publicar conteúdo")}${navButton("products","🛍️","Meus produtos")}${navButton("profits","💰","Meus lucros")}${navButton("promote","🚀","Promover produtos")}${navButton("library","📥","Minha biblioteca")}<div class="ima-nav-title">CONTA</div>${navButton("settings","⚙️","Configurações")}${navButton("admin","🛡️","Administrador")}</nav><div class="ima-sidebar-footer"><span class="${ONLINE?"online-dot":"offline-dot"}"></span>${ONLINE?"Sistema online":"Modo local"}<br>V10.3.4 • I.M.A FILMES</div>`;$("#closeSidebar").onclick=toggleMenu;$$(".ima-nav-button").forEach(b=>b.onclick=()=>nav(b.dataset.view))}
+function renderNavigation(){const s=$("#sidebar");if(!s)return;s.innerHTML=`<div class="ima-sidebar-head"><div class="ima-logo">🎬</div><div><strong>I.M.A FILMES</strong><small>Marketplace Digital</small></div><button id="closeSidebar" class="icon-btn">×</button></div><div class="ima-user-box"><div class="ima-avatar">👤</div><div><strong>${esc(state.profile?.name||state.user?.email||"Visitante")}</strong><small>${state.user?"Conta conectada":"Modo visitante"}</small></div></div><nav class="ima-navigation"><div class="ima-nav-title">NAVEGAÇÃO</div>${navButton("home","🏠","Início")}${navButton("films","🎬","Filmes")}${navButton("series","📺","Séries")}${navButton("anime","🍥","Anime")}${navButton("doramas","🌸","Doramas")}${navButton("ebooks","📚","E-books")}${navButton("favorites","❤️","Favoritos")}<div class="ima-nav-title">CRIADOR</div>${navButton("publish","⬆️","Publicar conteúdo")}${navButton("products","🛍️","Meus produtos")}${navButton("profits","💰","Meus lucros")}${navButton("promote","🚀","Promover produtos")}${navButton("library","📥","Minha biblioteca")}<div class="ima-nav-title">CONTA</div>${navButton("settings","⚙️","Configurações")}${navButton("admin","🛡️","Administrador")}</nav><div class="ima-sidebar-footer"><span class="${ONLINE?"online-dot":"offline-dot"}"></span>${ONLINE?"Sistema online":"Modo local"}<br>V10.3.5 • I.M.A FILMES</div>`;$("#closeSidebar").onclick=toggleMenu;$$(".ima-nav-button").forEach(b=>b.onclick=()=>nav(b.dataset.view))}
 function card(x){const title=x.title||"Sem título",cover=safeImageUrl(x.cover_url||x.cover,title),free=x.free===true||Number(x.price||0)===0;return `<article class="card"><div class="card-media"><img class="cover" src="${esc(cover)}" alt="${esc(title)}" onerror="this.onerror=null;this.src='${fallbackCover(title).replace(/'/g,"%27")}'"><span class="card-type">${esc(x.type||"Conteúdo")}</span><span class="price ${free?"free":""}">${free?"GRÁTIS":Number(x.price).toLocaleString("pt-AO")+" Kz"}</span></div><div class="cardbody"><h3>${esc(title)}</h3><div class="meta">${esc(x.profiles?.name||x.ownerName||"")}</div><p class="desc">${esc(x.description||"Conteúdo disponível na I.M.A FILMES.")}</p><div class="actions"><button class="ima-btn ima-btn-primary" data-play="${esc(x.id)}">▶ Assistir</button><button class="ima-btn ima-btn-icon" data-fav="${esc(x.id)}">${state.favorites.has(x.id)?"❤️":"♡"}</button><button class="ima-btn ima-btn-icon" data-dl="${esc(x.id)}">↓</button><button class="ima-btn ima-btn-icon" data-share="${esc(x.id)}">↗</button></div></div></article>`}
 function bindCards(){$$("[data-play]").forEach(b=>b.onclick=()=>play(b.dataset.play));$$("[data-fav]").forEach(b=>b.onclick=()=>toggleFav(b.dataset.fav));$$("[data-dl]").forEach(b=>b.onclick=()=>download(b.dataset.dl));$$("[data-share]").forEach(b=>b.onclick=()=>share(b.dataset.share))}
 function filtered(k=null){let a=[...state.contents].filter(x=>x&&x.status!=="removed"&&!isBlobUrl(x.cover_url));if(k==="films")a=a.filter(x=>/filme/i.test(x.type||""));if(k==="series")a=a.filter(x=>/s[ée]rie/i.test(x.type||""));if(k==="anime")a=a.filter(x=>/anime/i.test(x.type||""));if(k==="doramas")a=a.filter(x=>/dorama/i.test(x.type||""));if(k==="ebooks")a=a.filter(x=>/e-?book/i.test(x.type||""));if(k==="favorites")a=a.filter(x=>state.favorites.has(x.id));const q=state.query.toLowerCase().trim();if(q)a=a.filter(x=>[x.title,x.description,x.type].join(" ").toLowerCase().includes(q));return a}
@@ -41,11 +41,55 @@ function showGeneratedCovers(covers){const a=$("#autoCoverArea");if(!a||!covers.
 function bindPublishForm(){$$(".access-btn").forEach(b=>b.onclick=()=>{$$(".access-btn").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");$("#priceArea").style.display=b.dataset.free==="false"?"block":"none"});$("#pubVideo")?.addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;toast("🎨 Gerando 5 capas automáticas...");const c=await autoCovers(f,$("#pubTitle")?.value||"I.M.A FILMES");showGeneratedCovers(c);toast(c.length?"✅ 5 capas geradas.":"⚠️ Não foi possível extrair capas.")});$("#publishButton")?.addEventListener("click",publishCurrent)}
 async function blobToFile(data,name="capa.jpg"){const r=await fetch(data);return new File([await r.blob()],name,{type:"image/jpeg"})}
 async function publishCurrent(){const title=$("#pubTitle")?.value.trim(),description=$("#pubDescription")?.value.trim(),type=$(".publish-type.selected")?.dataset.type||"filme",free=$(".access-btn.selected")?.dataset.free!=="false",price=free?0:Number($("#pubPrice")?.value||0),cover=$("#pubCover")?.files?.[0]||null,video=$("#pubVideo")?.files?.[0]||null,ebook=$("#pubEbook")?.files?.[0]||null;if(!title)return toast("Digite o título.");if(!free&&price<=0)return toast("Informe o preço.");if(type==="ebook"&&!ebook)return toast("Selecione o e-book.");if(type!=="ebook"&&!video)return toast("Selecione o vídeo.");try{let auto=null;const chosen=$(".cover-choice.selected")?.dataset.coverIndex;if(!cover&&chosen!=null&&generatedCovers[chosen])auto=await blobToFile(generatedCovers[chosen],"capa-"+Date.now()+".jpg");if(ONLINE&&state.user)await publishOnline({type,title,description,free,price,cover:cover||auto,video,ebook});else await publishLocal({type,title,description,free,price,cover:cover||auto,video,ebook});toast("✅ Conteúdo publicado com sucesso!");nav("products")}catch(e){console.error(e);toast("❌ "+(e.message||"Erro ao publicar"))}}
+async function optimizedImageData(file,maxW=900,maxH=506){
+  if(!file)return null;
+  try{
+    const src=URL.createObjectURL(file);
+    const img=new Image();
+    const data=await new Promise((resolve,reject)=>{
+      img.onload=()=>{
+        const scale=Math.min(1,maxW/img.naturalWidth,maxH/img.naturalHeight);
+        const c=document.createElement("canvas");
+        c.width=Math.max(1,Math.round(img.naturalWidth*scale));
+        c.height=Math.max(1,Math.round(img.naturalHeight*scale));
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+        resolve(c.toDataURL("image/jpeg",.82));
+      };
+      img.onerror=reject; img.src=src;
+    });
+    URL.revokeObjectURL(src); return data;
+  }catch(e){return null}
+}
 async function uploadPublic(bucket,path,file){
-  const r=await sb.storage.from(bucket).upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});
-  if(r.error)throw r.error;
-  const u=sb.storage.from(bucket).getPublicUrl(path);
-  return u.data.publicUrl;
+  if(!sb||!file)throw new Error("Upload indisponível.");
+  let lastError=null;
+  for(let attempt=1;attempt<=3;attempt++){
+    try{
+      const session=(await sb.auth.getSession()).data?.session;
+      const token=session?.access_token||C.SUPABASE_ANON_KEY;
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),25000);
+      const res=await fetch(`${C.SUPABASE_URL}/storage/v1/object/${encodeURIComponent(bucket)}/${path.split("/").map(encodeURIComponent).join("/")}`,{
+        method:"POST",
+        headers:{apikey:C.SUPABASE_ANON_KEY,Authorization:`Bearer ${token}`,"Content-Type":file.type||"application/octet-stream",
+        "x-upsert":"false"},
+        body:file,signal:controller.signal
+      });
+      clearTimeout(timer);
+      if(!res.ok){let detail="";try{detail=await res.text()}catch(e){};throw new Error(`Storage HTTP ${res.status}${detail?": "+detail.slice(0,180):""}`)}
+      return sb.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+    }catch(e){
+      lastError=e;
+      if(attempt<3)await new Promise(r=>setTimeout(r,1200*attempt));
+    }
+  }
+  const fallback=await optimizedImageData(file);
+  if(fallback){
+    console.warn("Storage indisponível; usando capa otimizada localmente.",lastError);
+    toast("⚠️ Storage indisponível. A publicação continuará com uma capa de reserva.");
+    return fallback;
+  }
+  throw new Error("Não foi possível enviar a capa ao Storage. Verifique a conexão com o Supabase.");
 }
 async function uploadPrivate(bucket,path,file){
   const r=await sb.storage.from(bucket).upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});

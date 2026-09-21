@@ -12,3 +12,6 @@ IMPORTANTE: não apague o armazenamento de autenticação do Supabase manualment
 
 
 V10.3 CORREÇÃO PRINCIPAL: a geração das 5 capas automáticas não revoga o object URL enquanto o elemento de vídeo ainda pode estar tentando lê-lo. O elemento é pausado, recebe src vazio, load() e só depois o object URL é revogado.
+
+
+V10.3.5: versionamento unificado, cache-busting e upload de capas resiliente com timeout/retry e fallback de imagem otimizada.
