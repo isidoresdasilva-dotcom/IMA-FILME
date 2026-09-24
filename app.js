@@ -1,153 +1,192 @@
-/* I.M.A FILMES V10.3.5 — TYPE VERIFIED + STORAGE RESILIENT + CACHE FIX */
-const APP_VERSION="10.3.5";
-const C=window.IMA_CONFIG||{};
-const APP="I.M.A FILMES V10.3.5";
-const ONLINE=!!(window.supabase&&C.SUPABASE_URL&&C.SUPABASE_ANON_KEY);
-const sb=ONLINE?window.supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY):null;
-const state={user:null,profile:null,view:"home",query:"",contents:[],favorites:new Set(),progress:new Map(),transactions:[]};
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const uid=()=>crypto?.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(16).slice(2);
-function toast(msg){const e=$("#toast");if(!e)return;e.textContent=msg;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2800)}
-function isBlobUrl(v){return typeof v==="string"&&/^blob:/i.test(v)}
-function safeImageUrl(v,title){return v&&!isBlobUrl(v)?v:fallbackCover(title)}
-function fallbackCover(title,n=0){const c=document.createElement("canvas");c.width=640;c.height=360;const x=c.getContext("2d");x.fillStyle=["#07111f","#101b38","#102a43","#24154f","#111827"][n%5];x.fillRect(0,0,640,360);x.fillStyle="#fff";x.font="bold 34px Arial";x.fillText("🎬 I.M.A FILMES",30,70);x.font="bold 24px Arial";x.fillText(String(title||"I.M.A FILMES").slice(0,30),30,135);x.font="16px Arial";x.fillStyle="#93c5fd";x.fillText("Marketplace Digital",30,175);return c.toDataURL("image/jpeg",.88)}
-function normalizeContentType(t){
-  const m={filme:"Filme",serie:"Série",série:"Série",anime:"Anime",dorama:"Dorama",ebook:"E-book","e-book":"E-book"};
-  const raw=String(t||"").trim();
-  const normalized=m[raw.toLowerCase()];
-  if(!normalized) throw new Error("Tipo de conteúdo inválido. Escolha Filme, Série, Anime, Dorama ou E-book.");
-  return normalized;
-}
-function safeFileName(n){return String(n||"arquivo").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9._-]/g,"_")}
-function openModal(h){const m=$("#modal"),b=$("#modalBody");if(!m||!b)return;b.innerHTML=h;m.classList.remove("hidden")}
-function closeModal(){$("#modal")?.classList.add("hidden")}
-function nav(v){state.view=v;$("#sidebar")?.classList.remove("open");render()}
-function toggleMenu(){$("#sidebar")?.classList.toggle("open")}
-function navButton(v,i,l){return `<button class="ima-nav-button ${state.view===v?"active":""}" data-view="${v}"><span class="ima-nav-icon">${i}</span><span class="ima-nav-label">${l}</span><span class="ima-nav-arrow">›</span></button>`}
-function renderNavigation(){const s=$("#sidebar");if(!s)return;s.innerHTML=`<div class="ima-sidebar-head"><div class="ima-logo">🎬</div><div><strong>I.M.A FILMES</strong><small>Marketplace Digital</small></div><button id="closeSidebar" class="icon-btn">×</button></div><div class="ima-user-box"><div class="ima-avatar">👤</div><div><strong>${esc(state.profile?.name||state.user?.email||"Visitante")}</strong><small>${state.user?"Conta conectada":"Modo visitante"}</small></div></div><nav class="ima-navigation"><div class="ima-nav-title">NAVEGAÇÃO</div>${navButton("home","🏠","Início")}${navButton("films","🎬","Filmes")}${navButton("series","📺","Séries")}${navButton("anime","🍥","Anime")}${navButton("doramas","🌸","Doramas")}${navButton("ebooks","📚","E-books")}${navButton("favorites","❤️","Favoritos")}<div class="ima-nav-title">CRIADOR</div>${navButton("publish","⬆️","Publicar conteúdo")}${navButton("products","🛍️","Meus produtos")}${navButton("profits","💰","Meus lucros")}${navButton("promote","🚀","Promover produtos")}${navButton("library","📥","Minha biblioteca")}<div class="ima-nav-title">CONTA</div>${navButton("settings","⚙️","Configurações")}${navButton("admin","🛡️","Administrador")}</nav><div class="ima-sidebar-footer"><span class="${ONLINE?"online-dot":"offline-dot"}"></span>${ONLINE?"Sistema online":"Modo local"}<br>V10.3.5 • I.M.A FILMES</div>`;$("#closeSidebar").onclick=toggleMenu;$$(".ima-nav-button").forEach(b=>b.onclick=()=>nav(b.dataset.view))}
-function card(x){const title=x.title||"Sem título",cover=safeImageUrl(x.cover_url||x.cover,title),free=x.free===true||Number(x.price||0)===0;return `<article class="card"><div class="card-media"><img class="cover" src="${esc(cover)}" alt="${esc(title)}" onerror="this.onerror=null;this.src='${fallbackCover(title).replace(/'/g,"%27")}'"><span class="card-type">${esc(x.type||"Conteúdo")}</span><span class="price ${free?"free":""}">${free?"GRÁTIS":Number(x.price).toLocaleString("pt-AO")+" Kz"}</span></div><div class="cardbody"><h3>${esc(title)}</h3><div class="meta">${esc(x.profiles?.name||x.ownerName||"")}</div><p class="desc">${esc(x.description||"Conteúdo disponível na I.M.A FILMES.")}</p><div class="actions"><button class="ima-btn ima-btn-primary" data-play="${esc(x.id)}">▶ Assistir</button><button class="ima-btn ima-btn-icon" data-fav="${esc(x.id)}">${state.favorites.has(x.id)?"❤️":"♡"}</button><button class="ima-btn ima-btn-icon" data-dl="${esc(x.id)}">↓</button><button class="ima-btn ima-btn-icon" data-share="${esc(x.id)}">↗</button></div></div></article>`}
-function bindCards(){$$("[data-play]").forEach(b=>b.onclick=()=>play(b.dataset.play));$$("[data-fav]").forEach(b=>b.onclick=()=>toggleFav(b.dataset.fav));$$("[data-dl]").forEach(b=>b.onclick=()=>download(b.dataset.dl));$$("[data-share]").forEach(b=>b.onclick=()=>share(b.dataset.share))}
-function filtered(k=null){let a=[...state.contents].filter(x=>x&&x.status!=="removed"&&!isBlobUrl(x.cover_url));if(k==="films")a=a.filter(x=>/filme/i.test(x.type||""));if(k==="series")a=a.filter(x=>/s[ée]rie/i.test(x.type||""));if(k==="anime")a=a.filter(x=>/anime/i.test(x.type||""));if(k==="doramas")a=a.filter(x=>/dorama/i.test(x.type||""));if(k==="ebooks")a=a.filter(x=>/e-?book/i.test(x.type||""));if(k==="favorites")a=a.filter(x=>state.favorites.has(x.id));const q=state.query.toLowerCase().trim();if(q)a=a.filter(x=>[x.title,x.description,x.type].join(" ").toLowerCase().includes(q));return a}
-function homePage(){const a=filtered(),m=$("#main");m.innerHTML=`<section class="hero"><div class="hero-overlay"><span class="badge">🎬 MARKETPLACE DIGITAL</span><h1>I.M.A FILMES</h1><p>Assista, publique e venda seus conteúdos digitais.</p><div class="actions"><button class="ima-btn ima-btn-primary" id="heroPublish">⬆ Publicar conteúdo</button><button class="ima-btn" id="heroExplore">🎬 Explorar</button></div><p class="small">${ONLINE?"☁️ ONLINE":"💾 LOCAL"}</p></div></section><div class="sectionhead"><h2>🎬 Conteúdos</h2><span class="meta">${a.length} item(ns)</span></div><div class="grid">${a.length?a.slice(0,12).map(card).join(""):`<div style="grid-column:1/-1">${empty("Ainda não há conteúdos publicados.")}</div>`}</div>`;$("#heroPublish").onclick=()=>nav("publish");$("#heroExplore").onclick=()=>nav("films");bindCards()}
-function empty(t){return `<div class="empty"><div style="font-size:45px">🎬</div><h3>${esc(t)}</h3><p>Publique seu primeiro conteúdo.</p><button class="ima-btn ima-btn-primary" onclick="nav('publish')">⬆ Publicar conteúdo</button></div>`}
-function catalog(k){const names={films:"🎬 Filmes",series:"📺 Séries",anime:"🍥 Anime",doramas:"🌸 Doramas",ebooks:"📚 E-books",favorites:"❤️ Favoritos"},a=filtered(k),m=$("#main");m.innerHTML=`<div class="sectionhead"><div><h2>${names[k]}</h2><div class="meta">Conteúdos disponíveis</div></div><span class="meta">${a.length}</span></div><div class="grid">${a.length?a.map(card).join(""):`<div style="grid-column:1/-1">${empty("Nenhum conteúdo encontrado.")}</div>`}</div>`;bindCards()}
-function publishType(t,i,l){return `<button class="publish-type ${t==="filme"?"selected":""}" data-type="${t}"><span>${i}</span><strong>${l}</strong><small>Publicar ${l}</small></button>`}
-function publishForm(t){const e=t==="ebook";return `<div class="form-card"><div class="form-header"><h2>${({filme:"🎬",série:"📺",anime:"🍥",dorama:"🌸",ebook:"📚"}[t]||"🎬")} ${t}</h2><label>Título<input id="pubTitle" placeholder="Digite o título"></label><label>Descrição<textarea id="pubDescription" rows="5" placeholder="Descreva o conteúdo"></textarea></label><label>Capa original (opcional)<input id="pubCover" type="file" accept="image/*"></label>${e?`<label>E-book<input id="pubEbook" type="file" accept=".pdf,.epub"></label>`:`<label>Vídeo<input id="pubVideo" type="file" accept="video/*"></label><div id="autoCoverArea"></div>`}<h3>Tipo de acesso</h3><div class="access-buttons"><button class="access-btn selected" data-free="true">🟢 GRÁTIS</button><button class="access-btn" data-free="false">🔵 VENDER</button></div><div id="priceArea" style="display:none"><label>Preço (Kz)<input id="pubPrice" type="number" min="1"></label><div class="commission-info">Comissão da plataforma: <strong>10%</strong></div></div><button id="publishButton" class="ima-btn ima-btn-primary publish-main-button">⬆️ Publicar conteúdo</button></div>`}
-function publishPage(){const m=$("#main");m.innerHTML=`<div class="page-title"><span class="page-icon">⬆️</span><div><h1>Publicar conteúdo</h1><p>Publique filmes, séries, anime, doramas ou e-books.</p></div></div><div class="publish-container"><div class="publish-choice"><h3>O que deseja publicar?</h3><div class="publish-types">${publishType("filme","🎬","Filme")}${publishType("série","📺","Série")}${publishType("anime","🍥","Anime")}${publishType("dorama","🌸","Dorama")}${publishType("ebook","📚","E-book")}</div></div><div id="publishForm">${publishForm("filme")}</div></div>`;$$(".publish-type").forEach(b=>b.onclick=()=>{$$(".publish-type").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");$("#publishForm").innerHTML=publishForm(b.dataset.type);bindPublishForm()});bindPublishForm()}
-let generatedCovers=[];
-function autoCovers(file,title){return new Promise(resolve=>{generatedCovers=[];if(!file){resolve([]);return}const v=document.createElement("video");const u=URL.createObjectURL(file);let finished=false;const cleanup=()=>{try{v.pause();v.removeAttribute("src");v.load();}catch(e){};setTimeout(()=>{try{URL.revokeObjectURL(u)}catch(e){}},1500)};const done=()=>{if(finished)return;finished=true;cleanup();resolve(generatedCovers.slice(0,5))};v.src=u;v.muted=true;v.preload="metadata";v.onloadedmetadata=()=>{const d=Number.isFinite(v.duration)&&v.duration>0?v.duration:10,times=[.05,.2,.4,.6,.8].map(p=>Math.max(.1,Math.min(Math.max(.2,d-.1),d*p)));const c=document.createElement("canvas");c.width=640;c.height=360;const x=c.getContext("2d");let i=0;v.onseeked=()=>{try{x.drawImage(v,0,0,640,360);generatedCovers.push(c.toDataURL("image/jpeg",.9));i++;if(i<times.length){v.currentTime=times[i]}else done()}catch(e){done()}};v.currentTime=times[0]};v.onerror=()=>done()})}
-function showGeneratedCovers(covers){const a=$("#autoCoverArea");if(!a||!covers.length)return;a.innerHTML=`<div style="margin:12px 0;font-size:12px;font-weight:800">🎨 Escolha uma das 5 capas automáticas:</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px">${covers.map((c,i)=>`<button type="button" class="cover-choice ${i===0?"selected":""}" data-cover-index="${i}" style="padding:3px;border:2px solid ${i===0?"#3b82f6":"#20364e"};background:#071523;border-radius:8px"><img src="${c}" style="width:100%;display:block;border-radius:5px"><small>Capa ${i+1}</small></button>`).join("")}</div>`;$$("[data-cover-index]").forEach(b=>b.onclick=()=>{$$("[data-cover-index]").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");$$("[data-cover-index]").forEach(x=>x.style.borderColor=x.classList.contains("selected")?"#3b82f6":"#20364e")})}
-function bindPublishForm(){$$(".access-btn").forEach(b=>b.onclick=()=>{$$(".access-btn").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");$("#priceArea").style.display=b.dataset.free==="false"?"block":"none"});$("#pubVideo")?.addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;toast("🎨 Gerando 5 capas automáticas...");const c=await autoCovers(f,$("#pubTitle")?.value||"I.M.A FILMES");showGeneratedCovers(c);toast(c.length?"✅ 5 capas geradas.":"⚠️ Não foi possível extrair capas.")});$("#publishButton")?.addEventListener("click",publishCurrent)}
-async function blobToFile(data,name="capa.jpg"){const r=await fetch(data);return new File([await r.blob()],name,{type:"image/jpeg"})}
-async function publishCurrent(){const title=$("#pubTitle")?.value.trim(),description=$("#pubDescription")?.value.trim(),type=$(".publish-type.selected")?.dataset.type||"filme",free=$(".access-btn.selected")?.dataset.free!=="false",price=free?0:Number($("#pubPrice")?.value||0),cover=$("#pubCover")?.files?.[0]||null,video=$("#pubVideo")?.files?.[0]||null,ebook=$("#pubEbook")?.files?.[0]||null;if(!title)return toast("Digite o título.");if(!free&&price<=0)return toast("Informe o preço.");if(type==="ebook"&&!ebook)return toast("Selecione o e-book.");if(type!=="ebook"&&!video)return toast("Selecione o vídeo.");try{let auto=null;const chosen=$(".cover-choice.selected")?.dataset.coverIndex;if(!cover&&chosen!=null&&generatedCovers[chosen])auto=await blobToFile(generatedCovers[chosen],"capa-"+Date.now()+".jpg");if(ONLINE&&state.user)await publishOnline({type,title,description,free,price,cover:cover||auto,video,ebook});else await publishLocal({type,title,description,free,price,cover:cover||auto,video,ebook});toast("✅ Conteúdo publicado com sucesso!");nav("products")}catch(e){console.error(e);toast("❌ "+(e.message||"Erro ao publicar"))}}
-async function optimizedImageData(file,maxW=900,maxH=506){
-  if(!file)return null;
-  try{
-    const src=URL.createObjectURL(file);
-    const img=new Image();
-    const data=await new Promise((resolve,reject)=>{
-      img.onload=()=>{
-        const scale=Math.min(1,maxW/img.naturalWidth,maxH/img.naturalHeight);
-        const c=document.createElement("canvas");
-        c.width=Math.max(1,Math.round(img.naturalWidth*scale));
-        c.height=Math.max(1,Math.round(img.naturalHeight*scale));
-        c.getContext("2d").drawImage(img,0,0,c.width,c.height);
-        resolve(c.toDataURL("image/jpeg",.82));
-      };
-      img.onerror=reject; img.src=src;
-    });
-    URL.revokeObjectURL(src); return data;
-  }catch(e){return null}
-}
-async function uploadPublic(bucket,path,file){
-  if(!sb||!file)throw new Error("Upload indisponível.");
-  let lastError=null;
-  for(let attempt=1;attempt<=3;attempt++){
-    try{
-      const session=(await sb.auth.getSession()).data?.session;
-      const token=session?.access_token||C.SUPABASE_ANON_KEY;
-      const controller=new AbortController();
-      const timer=setTimeout(()=>controller.abort(),25000);
-      const res=await fetch(`${C.SUPABASE_URL}/storage/v1/object/${encodeURIComponent(bucket)}/${path.split("/").map(encodeURIComponent).join("/")}`,{
-        method:"POST",
-        headers:{apikey:C.SUPABASE_ANON_KEY,Authorization:`Bearer ${token}`,"Content-Type":file.type||"application/octet-stream",
-        "x-upsert":"false"},
-        body:file,signal:controller.signal
-      });
-      clearTimeout(timer);
-      if(!res.ok){let detail="";try{detail=await res.text()}catch(e){};throw new Error(`Storage HTTP ${res.status}${detail?": "+detail.slice(0,180):""}`)}
-      return sb.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-    }catch(e){
-      lastError=e;
-      if(attempt<3)await new Promise(r=>setTimeout(r,1200*attempt));
-    }
-  }
-  const fallback=await optimizedImageData(file);
-  if(fallback){
-    console.warn("Storage indisponível; usando capa otimizada localmente.",lastError);
-    toast("⚠️ Storage indisponível. A publicação continuará com uma capa de reserva.");
-    return fallback;
-  }
-  throw new Error("Não foi possível enviar a capa ao Storage. Verifique a conexão com o Supabase.");
-}
-async function uploadPrivate(bucket,path,file){
-  const r=await sb.storage.from(bucket).upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});
-  if(r.error)throw r.error;
-  return path;
-}
-async function publishOnline(d){
-  const id=uid(),contentType=normalizeContentType(d.type),coverBucket=C.STORAGE_COVER_BUCKET||"capas",videoBucket=C.STORAGE_VIDEO_BUCKET||"videos",ebookBucket=C.STORAGE_EBOOK_BUCKET||"ebooks";
-  let coverUrl=fallbackCover(d.title);
-  if(d.cover)coverUrl=await uploadPublic(coverBucket,`${state.user.id}/${id}-${safeFileName(d.cover.name)}`,d.cover);
-  let ebookPath=null;
-  if(d.ebook)ebookPath=await uploadPrivate(ebookBucket,`${state.user.id}/${id}-${safeFileName(d.ebook.name)}`,d.ebook);
-  const row={id,owner_id:state.user.id,title:d.title,description:d.description,type:contentType,price:d.price,free:d.free,cover_url:coverUrl,ebook_url:ebookPath,status:"active"};
-  const r=await sb.from("contents").insert(row);
-  if(r.error)throw r.error;
-  if(d.video){
-    const p=await uploadPrivate(videoBucket,`${state.user.id}/${id}-${safeFileName(d.video.name)}`,d.video);
-    const e=await sb.from("episodes").insert({id:uid(),content_id:id,season_no:1,episode_no:1,title:d.title,video_url:p});
-    if(e.error)throw e.error;
-  }
-  await loadData();
-}
-async function publishLocal(d){const item={id:uid(),owner_id:state.user?.id||"local",ownerName:state.profile?.name||"Meu perfil",title:d.title,description:d.description,type:normalizeContentType(d.type),price:d.price,free:d.free,status:"active",cover_url:d.cover?await fileToDataUrl(d.cover):fallbackCover(d.title),video_file:d.video?await fileToDataUrl(d.video):null,ebook_file:d.ebook?await fileToDataUrl(d.ebook):null,created_at:new Date().toISOString()};state.contents.unshift(item);localStorage.setItem("IMA_FILMES_V10_LOCAL",JSON.stringify(state.contents.map(x=>({...x,video_file:null,ebook_file:null}))))}
-function fileToDataUrl(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(f)})}
-function productsPage(){const a=state.contents.filter(x=>x.owner_id===state.user?.id||(!ONLINE&&x.owner_id==="local"));$("#main").innerHTML=`<div class="page-title"><span class="page-icon">🛍️</span><div><h1>Meus produtos</h1><p>Gerencie seus conteúdos.</p></div></div><div class="stats-row"><div class="stat-card">📦<strong>${a.length}</strong><small>Produtos</small></div><div class="stat-card">🟢<strong>${a.filter(x=>x.status==="published").length}</strong><small>Publicados</small></div><div class="stat-card">💰<strong>${a.filter(x=>Number(x.price)>0).length}</strong><small>À venda</small></div></div><div class="grid">${a.length?a.map(card).join(""):`<div style="grid-column:1/-1">${empty("Você ainda não publicou produtos.")}</div>`}</div>`;bindCards()}
-function profitsPage(){const a=state.transactions.filter(x=>x.seller_id===state.user?.id),g=a.reduce((s,x)=>s+Number(x.amount||x.gross_amount||0),0);$("#main").innerHTML=`<div class="page-title"><span class="page-icon">💰</span><div><h1>Meus lucros</h1><p>Resumo financeiro.</p></div></div><div class="stats-row"><div class="stat-card">💵<strong>${g.toLocaleString("pt-AO")} Kz</strong><small>Vendas</small></div><div class="stat-card">📊<strong>${(g*.1).toLocaleString("pt-AO")} Kz</strong><small>Comissão</small></div><div class="stat-card">💰<strong>${(g*.9).toLocaleString("pt-AO")} Kz</strong><small>Receita estimada</small></div></div>`}
-function promotePage(){$("#main").innerHTML=`<div class="page-title"><span class="page-icon">🚀</span><div><h1>Promover produtos</h1><p>Escolha um plano para aumentar a visibilidade.</p></div></div><div class="promotion-grid"><div class="promotion-card">🚀<h2>Plano 7 dias</h2><strong class="promotion-price">800 Kz</strong><p>7 dias • 2 vídeos</p><button class="ima-btn ima-btn-primary" onclick="toast('Plano selecionado.')">Promover agora</button></div><div class="promotion-card">🚀<h2>Plano 1 mês</h2><strong class="promotion-price">1.600 Kz</strong><p>30 dias • 4 vídeos</p><button class="ima-btn ima-btn-primary" onclick="toast('Plano selecionado.')">Promover agora</button></div></div>`}
-function libraryPage(){$("#main").innerHTML=`<div class="page-title"><span class="page-icon">📥</span><div><h1>Minha biblioteca</h1><p>Conteúdos adquiridos e salvos.</p></div></div>${empty("Sua biblioteca está vazia.")}`}
-function settingsPage(){$("#main").innerHTML=`<div class="page-title"><span class="page-icon">⚙️</span><div><h1>Configurações</h1><p>Gerencie sua conta.</p></div></div><div class="settings-grid"><div class="form-card"><h2>👤 Perfil</h2><label>Nome<input id="profileName" value="${esc(state.profile?.name||"")}" placeholder="Seu nome"></label><button class="ima-btn ima-btn-primary" onclick="saveProfile()">💾 Salvar</button></div><div class="form-card"><h2>🔐 Conta</h2><p>${esc(state.user?.email||"Visitante")}</p>${state.user?`<button class="ima-btn" onclick="logout()">🚪 Sair</button>`:`<button class="ima-btn ima-btn-primary" onclick="loginModal()">🔐 Entrar</button>`}</div></div>`}
-function adminPage(){$("#main").innerHTML=`<div class="page-title"><span class="page-icon">🛡️</span><div><h1>Administrador</h1><p>Área administrativa protegida.</p></div></div><div class="admin-warning">🔐 Acesso administrativo<button class="ima-btn ima-btn-primary" onclick="loginModal()">Entrar</button></div>`}
-function render(){renderNavigation();switch(state.view){case"films":catalog("films");break;case"series":catalog("series");break;case"anime":catalog("anime");break;case"doramas":catalog("doramas");break;case"ebooks":catalog("ebooks");break;case"favorites":catalog("favorites");break;case"publish":publishPage();break;case"products":productsPage();break;case"profits":profitsPage();break;case"promote":promotePage();break;case"library":libraryPage();break;case"settings":settingsPage();break;case"admin":adminPage();break;default:homePage()}}
-async function loadData(){if(!ONLINE){try{state.contents=JSON.parse(localStorage.getItem("IMA_FILMES_V10_LOCAL")||"[]").filter(x=>x&&!isBlobUrl(x.cover_url)&&!isBlobUrl(x.cover)&&!isBlobUrl(x.video_file)&&!isBlobUrl(x.video));localStorage.setItem("IMA_FILMES_V10_LOCAL",JSON.stringify(state.contents.map(x=>({...x,video_file:null,ebook_file:null}))));}catch(e){state.contents=[]}return}try{const c=await sb.from("contents").select("*,profiles:owner_id(name)").neq("status","removed");if(!c.error)state.contents=(c.data||[]).filter(x=>!isBlobUrl(x.cover_url));if(state.user){const [f,p,t]=await Promise.all([sb.from("favorites").select("content_id").eq("user_id",state.user.id),sb.from("progress").select("*").eq("user_id",state.user.id),sb.from("transactions").select("*,contents(title)").or(`buyer_id.eq.${state.user.id},seller_id.eq.${state.user.id}`)]);if(!f.error)state.favorites=new Set((f.data||[]).map(x=>x.content_id));if(!p.error)(p.data||[]).forEach(x=>state.progress.set(x.content_id,x));if(!t.error)state.transactions=t.data||[]}}catch(e){console.warn("loadData",e)}}
-async function loadProfile(){if(!sb||!state.user)return;const r=await sb.from("profiles").select("*").eq("id",state.user.id).maybeSingle();if(!r.error)state.profile=r.data||null}
-async function initAuth(){if(!sb){render();return}const r=await sb.auth.getSession();state.user=r.data?.session?.user||null;if(state.user)await loadProfile();await loadData();render();sb.auth.onAuthStateChange(async(_,s)=>{state.user=s?.user||null;if(state.user)await loadProfile();else state.profile=null;await loadData();render()})}
-function loginModal(){openModal(`<div class="modal-professional"><div class="modal-icon">👤</div><h2>Entrar</h2><label>E-mail<input id="loginEmail" type="email"></label><label>Senha<input id="loginPassword" type="password"></label><button class="ima-btn ima-btn-primary" onclick="performLogin()">🔐 Entrar</button><button class="ima-btn" onclick="registerModal()">📝 Criar conta</button></div>`)}
-async function performLogin(){const email=$("#loginEmail")?.value.trim(),password=$("#loginPassword")?.value;if(!email||!password)return toast("Preencha os campos.");const r=await sb.auth.signInWithPassword({email,password});if(r.error)return toast(r.error.message);closeModal();toast("✅ Login realizado.")}
-function registerModal(){openModal(`<div class="modal-professional"><h2>📝 Criar conta</h2><label>E-mail<input id="registerEmail" type="email"></label><label>Senha<input id="registerPassword" type="password"></label><button class="ima-btn ima-btn-primary" onclick="performRegister()">Criar conta</button></div>`)}
-async function performRegister(){const email=$("#registerEmail")?.value.trim(),password=$("#registerPassword")?.value;if(!email||!password)return toast("Preencha os campos.");const r=await sb.auth.signUp({email,password});if(r.error)return toast(r.error.message);closeModal();toast("✅ Conta criada.")}
-async function logout(){if(sb)await sb.auth.signOut();state.user=null;state.profile=null;nav("home")}
-async function saveProfile(){if(!state.user)return loginModal();const name=$("#profileName")?.value.trim();if(!name)return toast("Digite seu nome.");const r=await sb.from("profiles").upsert({id:state.user.id,name});if(r.error)return toast(r.error.message);state.profile={...(state.profile||{}),name};render();toast("✅ Perfil salvo.")}
-async function toggleFav(id){if(!state.user)return loginModal();const has=state.favorites.has(id);const r=has?await sb.from("favorites").delete().eq("user_id",state.user.id).eq("content_id",id):await sb.from("favorites").insert({user_id:state.user.id,content_id:id});if(r.error)return toast("Não foi possível atualizar.");has?state.favorites.delete(id):state.favorites.add(id);render()}
-async function resolveVideoUrl(v){if(!v||isBlobUrl(v))return null;if(/^https?:\/\//i.test(v))return v;const r=await sb.storage.from(C.STORAGE_VIDEO_BUCKET||"videos").createSignedUrl(v,3600);return r.error?null:r.data.signedUrl}
-async function play(id){const item=state.contents.find(x=>x.id===id);if(!item)return;if(item.video_file)return openModal(`<video controls autoplay style="width:100%" src="${esc(item.video_file)}"></video>`);if(!sb)return toast("Vídeo online indisponível.");const r=await sb.from("episodes").select("*").eq("content_id",id).order("season_no").order("episode_no").limit(1).maybeSingle();if(r.error||!r.data)return toast("Vídeo não encontrado.");const u=await resolveVideoUrl(r.data.video_url);if(!u)return toast("Não foi possível abrir o vídeo.");openModal(`<h2>${esc(item.title)}</h2><video controls autoplay style="width:100%;background:#000;border-radius:10px" src="${esc(u)}"></video>`)}
-async function download(id){const item=state.contents.find(x=>x.id===id);if(!item)return;let u=item.ebook_file||item.video_file;if(!u&&sb){const r=await sb.from("episodes").select("video_url").eq("content_id",id).limit(1).maybeSingle();if(!r.error&&r.data)u=await resolveVideoUrl(r.data.video_url)}if(!u)return toast("Arquivo não encontrado.");const a=document.createElement("a");a.href=u;a.download=safeFileName(item.title||"IMA-FILMES");a.target="_blank";document.body.appendChild(a);a.click();a.remove()}
-async function share(id){const u=location.href.split("#")[0]+"#content="+encodeURIComponent(id);try{await navigator.clipboard.writeText(u);toast("🔗 Link copiado.")}catch(e){prompt("Copie o link:",u)}}
-function scrubBlobDom(){
-  try{
-    document.querySelectorAll("img,video,source,a").forEach(function(el){
-      ["src","href"].forEach(function(a){
-        var v=el.getAttribute(a);
-        if(isBlobUrl(v)){
-          el.removeAttribute(a);
-          if(el.tagName.toLowerCase()==="img") el.src=fallbackCover("I.M.A FILMES");
-        }
-      });
-    });
-  }catch(e){}
+const C = window.IMA_CONFIG || {};
+const APP = 'I.M.A FILMES V10.4.0';
+const ONLINE = !!(window.supabase && C.SUPABASE_URL && C.SUPABASE_ANON_KEY && !C.SUPABASE_URL.includes('COLOQUE_AQUI'));
+const sb = ONLINE ? window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY) : null;
+
+const BLOCKED = ['pornografia','pornô','porno','porn','xxx','sexo explícito','sex explicit','nudez explícita'];
+let state = { user:null, profile:null, view:'home', query:'', contents:[], favorites:new Set(), progress:new Map(), transactions:[] };
+let localDB = null;
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(text){ const el=$('#toast'); if(!el)return; el.textContent=text; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),3000); }
+function uid(){ return crypto.randomUUID ? crypto.randomUUID() : Date.now()+'-'+Math.random().toString(16).slice(2); }
+function isBlocked(text){ const t=String(text||'').toLowerCase(); return BLOCKED.some(w=>t.includes(w)); }
+
+function fallbackCover(title,n=0){
+  const c=document.createElement('canvas'); c.width=640; c.height=360;
+  const g=c.getContext('2d');
+  const bg=['#0f172a','#172554','#164e63','#312e81','#111827'][n%5];
+  g.fillStyle=bg; g.fillRect(0,0,c.width,c.height);
+  g.fillStyle='#fff'; g.font='bold 34px Arial'; g.fillText('🎬 I.M.A FILMES',30,75);
+  g.font='bold 25px Arial'; g.fillText(String(title||'I.M.A FILMES').slice(0,30),30,145);
+  g.font='16px Arial'; g.fillStyle='#93c5fd'; g.fillText('Capa automática '+(n+1),30,185);
+  return c.toDataURL('image/jpeg',.86);
 }
 
-$("#menuBtn").onclick=toggleMenu;$("#settingsBtn").onclick=()=>nav("settings");$("#profileBtn").onclick=()=>state.user?nav("settings"):loginModal();document.addEventListener("click",e=>{if(e.target.matches("[data-close-modal]"))closeModal()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});Object.assign(window,{nav,toggleMenu,closeModal,loginModal,registerModal,performLogin,performRegister,logout,saveProfile});
-document.addEventListener("DOMContentLoaded",()=>{scrubBlobDom();render();initAuth();setTimeout(scrubBlobDom,500);setTimeout(scrubBlobDom,2000);console.log("✅ "+APP+" iniciado:",ONLINE?"ONLINE":"LOCAL","| versão",APP_VERSION)});
+function autoCovers(file,title){
+  return new Promise(resolve=>{
+    const fallback=[0,1,2,3,4].map(i=>fallbackCover(title,i));
+    if(!file || !file.type.startsWith('video/')) return resolve(fallback);
+    const v=document.createElement('video'); v.muted=true; v.preload='metadata'; v.src=URL.createObjectURL(file);
+    v.onloadedmetadata=()=>{
+      const d=isFinite(v.duration)&&v.duration>0?v.duration:10;
+      const times=[.05,.2,.4,.6,.8].map(p=>Math.max(.1,Math.min(Math.max(.2,d-.1),d*p)));
+      const c=document.createElement('canvas'); c.width=640; c.height=360; const out=[]; let i=0;
+      v.onseeked=()=>{ try{ c.getContext('2d').drawImage(v,0,0,640,360); out.push(c.toDataURL('image/jpeg',.86)); i++; if(i<times.length)v.currentTime=times[i]; else {URL.revokeObjectURL(v.src); resolve(out.length===5?out:fallback);} }catch(e){URL.revokeObjectURL(v.src);resolve(fallback);} };
+      v.currentTime=times[0];
+    };
+    v.onerror=()=>{URL.revokeObjectURL(v.src);resolve(fallback);};
+  });
+}
+
+function fileData(file){ return new Promise((resolve,reject)=>{ if(!file)return resolve(''); const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=()=>reject(r.error); r.readAsDataURL(file); }); }
+function blobFromData(data){ if(data instanceof Blob)return data; if(typeof data!=='string')return null; const p=data.split(','); if(p.length<2)return null; const mime=(p[0].match(/data:([^;]+)/)||[])[1]||'application/octet-stream'; const bin=atob(p[1]); const a=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i); return new Blob([a],{type:mime}); }
+
+function openModal(html){ $('#modalBody').innerHTML=html; $('#modal').classList.remove('hidden'); }
+function closeModal(){ $('#modal').classList.add('hidden'); $('#modalBody').innerHTML=''; }
+
+async function upload(bucket,path,file,contentType){
+  if(!sb) throw new Error('Supabase não está configurado.');
+  if(!file) throw new Error('Arquivo não selecionado.');
+  const {error}=await sb.storage.from(bucket).upload(path,file,{contentType:contentType||file.type||'application/octet-stream',upsert:false});
+  if(error) throw error;
+  return path;
+}
+async function signedVideoUrl(path){
+  if(!path) return null;
+  if(/^https?:\/\//i.test(path)) return path;
+  const {data,error}=await sb.storage.from(C.STORAGE_VIDEO_BUCKET).createSignedUrl(path,3600);
+  if(error) throw error;
+  return data?.signedUrl||null;
+}
+
+function localOpen(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open('IMA_FILMES_DB_V9_LOCAL',2);
+    req.onupgradeneeded=e=>{ const db=e.target.result; ['contents','users','favorites','progress','transactions'].forEach(s=>{if(!db.objectStoreNames.contains(s))db.createObjectStore(s,{keyPath:'id'});}); };
+    req.onsuccess=()=>{localDB=req.result;resolve();}; req.onerror=()=>reject(req.error);
+  });
+}
+function lget(store){return new Promise((resolve,reject)=>{const q=localDB.transaction(store).objectStore(store).getAll();q.onsuccess=()=>resolve(q.result||[]);q.onerror=()=>reject(q.error);});}
+function lput(store,obj){return new Promise((resolve,reject)=>{const q=localDB.transaction(store,'readwrite').objectStore(store).put(obj);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});}
+function ldel(store,id){return new Promise((resolve,reject)=>{const q=localDB.transaction(store,'readwrite').objectStore(store).delete(id);q.onsuccess=()=>resolve();q.onerror=()=>reject(q.error);});}
+
+async function localLogin(name,email,password){
+  const users=await lget('users'); let u=users.find(x=>x.email===email);
+  if(u && u.password!==password)throw new Error('Senha incorreta.');
+  if(!u){u={id:uid(),name,email,password,role:'user',createdAt:Date.now()};await lput('users',u);}
+  state.user={id:u.id,email:u.email}; state.profile=u; localStorage.setItem('ima_v9_local_user',u.id);
+}
+
+async function initAuth(){
+  if(ONLINE){
+    const {data}=await sb.auth.getSession(); if(data.session)await loadProfile(data.session.user);
+    sb.auth.onAuthStateChange(async(_event,session)=>{if(session)await loadProfile(session.user);else{state.user=null;state.profile=null;await render();}});
+  }else{
+    await localOpen(); const id=localStorage.getItem('ima_v9_local_user');
+    if(id){const u=(await lget('users')).find(x=>x.id===id);if(u){state.user={id:u.id,email:u.email};state.profile=u;}}
+  }
+}
+
+async function loadProfile(user){
+  state.user=user;
+  const {data,error}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
+  if(error)console.warn('Perfil:',error.message);
+  state.profile=data||{id:user.id,name:user.user_metadata?.name||user.email,role:'user'};
+}
+
+async function loadData(){
+  if(ONLINE){
+    const c=await sb.from('contents').select('*,profiles:owner_id(name)').neq('status','removed');
+    if(c.error)console.warn('Conteúdos:',c.error.message);
+    state.contents=c.data||[];
+    if(state.user){
+      const [f,p,t]=await Promise.all([
+        sb.from('favorites').select('content_id').eq('user_id',state.user.id),
+        sb.from('progress').select('*').eq('user_id',state.user.id),
+        sb.from('transactions').select('*,contents(title)').or(`buyer_id.eq.${state.user.id},seller_id.eq.${state.user.id}`)
+      ]);
+      state.favorites=new Set((f.data||[]).map(x=>x.content_id));
+      state.progress=new Map((p.data||[]).map(x=>[x.content_id,x]));
+      state.transactions=t.data||[];
+    }else{state.favorites=new Set();state.progress=new Map();state.transactions=[];}
+  }else{
+    state.contents=await lget('contents');
+    if(state.user){const f=await lget('favorites');state.favorites=new Set(f.filter(x=>x.userId===state.user.id).map(x=>x.contentId));const p=await lget('progress');state.progress=new Map(p.filter(x=>x.userId===state.user.id).map(x=>[x.contentId,x]));}else{state.favorites=new Set();state.progress=new Map();}
+    state.transactions=await lget('transactions');
+  }
+}
+
+function nav(view){state.view=view;$('#sidebar').classList.remove('open');render();}
+function filtered(kind){let a=state.contents.filter(x=>x.status!=='removed');if(kind==='films')a=a.filter(x=>x.type==='Filme');if(kind==='series')a=a.filter(x=>x.type==='Série');if(kind==='ebooks')a=a.filter(x=>x.type==='E-book');if(kind==='favorites')a=a.filter(x=>state.favorites.has(x.id));if(state.query){const q=state.query.toLowerCase();a=a.filter(x=>(x.title+' '+(x.description||'')).toLowerCase().includes(q));}return a;}
+function empty(t){return `<div class="empty" style="grid-column:1/-1">${esc(t)}</div>`;}
+function card(x){
+  const fav=state.favorites.has(x.id),p=state.progress.get(x.id),pct=p&&p.duration?Math.min(100,p.seconds/p.duration*100):0;
+  return `<article class="card"><img class="cover" src="${esc(x.cover_url||x.cover||fallbackCover(x.title,0))}" alt="Capa"><div class="cardbody"><h3>${esc(x.title)}</h3><div class="meta">${esc(x.type)} • ${esc(x.year||new Date(x.created_at||Date.now()).getFullYear())}${x.profiles?.name?' • '+esc(x.profiles.name):x.ownerName?' • '+esc(x.ownerName):''}</div><p class="desc">${esc(x.description||'Sem descrição.')}</p><span class="tag">${x.free||Number(x.price||0)===0?'Grátis':Number(x.price).toLocaleString('pt-AO')+' Kz'}</span>${pct?`<div class="progressbar"><span style="width:${pct}%"></span></div>`:''}<div class="actions"><button data-play="${x.id}">▶️</button><button data-fav="${x.id}">${fav?'💔':'❤️'}</button><button data-dl="${x.id}">⬇️</button><button data-share="${x.id}">🔗</button></div></div></article>`;
+}
+function bind(){ $$('[data-play]').forEach(b=>b.onclick=()=>play(b.dataset.play)); $$('[data-fav]').forEach(b=>b.onclick=()=>toggleFav(b.dataset.fav)); $$('[data-dl]').forEach(b=>b.onclick=()=>download(b.dataset.dl)); $$('[data-share]').forEach(b=>b.onclick=()=>share(b.dataset.share)); }
+
+function homePage(){const a=filtered();$('#main').innerHTML=`<section class="hero"><div class="hero-overlay"><span class="badge">🎬 PLATAFORMA DIGITAL</span><h1>BEM-VINDO AO I.M.A FILMES</h1><p>A plataforma para assistir, publicar e futuramente vender filmes, séries e e-books.</p><p class="small">${ONLINE?'☁️ Modo online ativo':'💾 Modo local ativo — configure o Supabase para publicar online'}</p><button class="primary" id="goPub">Publicar meu conteúdo</button></div></section><div class="sectionhead"><h2>Conteúdos em destaque</h2><span class="meta">${a.length} item(ns)</span></div><div class="grid">${a.slice(0,12).map(card).join('')||empty('Ainda não há conteúdos.')}</div>`;$('#goPub').onclick=()=>nav('publish');bind();}
+function catalog(kind){const names={films:'Filmes',series:'Séries',ebooks:'E-books',favorites:'Favoritos'};const a=filtered(kind);$('#main').innerHTML=`<div class="sectionhead"><h1>${names[kind]}</h1><span class="meta">${a.length} item(ns)</span></div><div class="grid">${a.map(card).join('')||empty('Nenhum conteúdo encontrado.')}</div>`;bind();}
+
+async function publishPage(){
+  if(!state.user){$('#main').innerHTML=`<div class="panel"><h2>🔐 Entre para publicar</h2><p>Crie uma conta para publicar conteúdo.</p><button class="primary" id="loginNow">Entrar / Criar conta</button></div>`;$('#loginNow').onclick=login;return;}
+  $('#main').innerHTML=`<div class="sectionhead"><h1>⬆️ Publicar conteúdo</h1></div><div class="panel"><div class="notice">⚠️ O sistema bloqueia termos explícitos no título e descrição.</div><form id="pub" class="form"><div class="row"><div><label>Tipo</label><select id="type"><option>Filme</option><option>Série</option><option>E-book</option></select></div><div><label>Preço (Kz)</label><input id="price" type="number" min="0" value="0"></div></div><label>Título</label><input id="title" required><label>Descrição</label><textarea id="desc"></textarea><div id="seriesBox" style="display:none"><label>Vídeos dos episódios</label><input id="episodeFiles" type="file" accept="video/*" multiple></div><label>Capa manual (opcional)</label><input id="cover" type="file" accept="image/*"><div id="coverOptions"></div><label id="videoLabel">Vídeo</label><input id="video" type="file" accept="video/*"><label id="bookLabel" style="display:none">E-book PDF/EPUB</label><input id="book" style="display:none" type="file" accept="application/pdf,.pdf,.epub"><button id="publishButton" type="submit" class="primary">${ONLINE?'Publicar na nuvem':'Publicar no navegador'}</button><div id="publishStatus" class="small"></div></form></div>`;
+  $('#type').onchange=()=>{const t=$('#type').value,s=t==='Série',e=t==='E-book';$('#seriesBox').style.display=s?'block':'none';$('#video').style.display=(s||e)?'none':'block';$('#videoLabel').style.display=(s||e)?'none':'block';$('#book').style.display=e?'block':'none';$('#bookLabel').style.display=e?'block':'none';};
+  let covers=[],chosen='';
+  const showCovers=()=>{$('#coverOptions').innerHTML='<label>Escolha uma das 5 capas automáticas</label><div class="cover-options">'+covers.map((c,i)=>`<img src="${c}" data-ci="${i}" alt="Capa ${i+1}">`).join('')+'</div>';chosen=covers[0]||'';$$('#coverOptions img').forEach((im,i)=>im.onclick=()=>{$$('#coverOptions img').forEach(z=>z.classList.remove('selected'));im.classList.add('selected');chosen=covers[i];});$('#coverOptions img')?.classList.add('selected');};
+  $('#video').onchange=async e=>{covers=await autoCovers(e.target.files[0],$('#title').value||'I.M.A FILMES');showCovers();};
+  $('#title').oninput=async()=>{if($('#video').files[0]){covers=await autoCovers($('#video').files[0],$('#title').value||'I.M.A FILMES');showCovers();}};
+  $('#pub').onsubmit=async e=>{e.preventDefault();const button=$('#publishButton'),status=$('#publishStatus');if(button.disabled)return;const type=$('#type').value,title=$('#title').value.trim(),desc=$('#desc').value.trim();if(!title)return toast('Digite o título.');if(isBlocked(title+' '+desc))return toast('❌ Conteúdo não permitido.');button.disabled=true;button.textContent='⏳ Publicando...';button.style.opacity='.65';status.textContent='A enviar e guardar o conteúdo. Não feche esta página.';try{const price=Number($('#price').value)||0,coverFile=$('#cover').files[0],book=$('#book').files[0],videoFile=$('#video').files[0];if(type==='Filme'&&!videoFile)throw new Error('Selecione o vídeo do filme.');if(type==='Série'&&!$('#episodeFiles').files.length)throw new Error('Selecione pelo menos um episódio.');const coverData=coverFile?await fileData(coverFile):chosen||fallbackCover(title,0);const result=ONLINE?await publishOnline({type,title,desc,price,coverFile,coverData,book,videoFile}):await publishLocal({type,title,desc,price,coverFile,coverData,book,videoFile});toast('✅ Conteúdo publicado com sucesso!');status.textContent='✅ Publicado. A abrir o conteúdo...';await loadData();if(result?.contentId){state.view=type==='Série'?'series':type==='E-book'?'ebooks':'films';await render();setTimeout(()=>play(result.contentId),250);}else nav(type==='Filme'?'films':type==='Série'?'series':'ebooks');}catch(err){console.error('PUBLICAÇÃO:',err);toast('❌ '+(err.message||'Falha ao publicar.'));status.textContent='❌ '+(err.message||'Falha ao publicar.');button.disabled=false;button.textContent=ONLINE?'Publicar na nuvem':'Publicar no navegador';button.style.opacity='1';}};
+}
+
+
+async function publishOnline(o){
+  if(!state.user?.id) throw new Error('Sua sessão expirou. Entre novamente.');
+  let coverPath=null,ebookPath=null;
+  try{
+    if(o.coverFile){coverPath=`${state.user.id}/${uid()}-${o.coverFile.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;await upload(C.STORAGE_COVER_BUCKET,coverPath,o.coverFile,o.coverFile.type);}
+    else if(o.coverData?.startsWith('data:')){coverPath=`${state.user.id}/${uid()}.jpg`;await upload(C.STORAGE_COVER_BUCKET,coverPath,blobFromData(o.coverData),'image/jpeg');}
+    if(o.book){ebookPath=`${state.user.id}/${uid()}-${o.book.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;await upload(C.STORAGE_EBOOK_BUCKET,ebookPath,o.book,o.book.type||'application/pdf');}
+    const {data:c,error}=await sb.from('contents').insert({owner_id:state.user.id,type:o.type,title:o.title,description:o.desc,year:new Date().getFullYear(),price:o.price,free:o.price===0,cover_url:coverPath,ebook_url:ebookPath,status:'active'}).select().single();if(error)throw error;
+    if(o.type==='Filme'){const path=`${state.user.id}/${c.id}.mp4`;await upload(C.STORAGE_VIDEO_BUCKET,path,o.videoFile,o.videoFile.type);const r=await sb.from('episodes').insert({content_id:c.id,season_no:1,episode_no:1,title:o.title,video_url:path});if(r.error)throw r.error;}
+    if(o.type==='Série'){const files=[...$('#episodeFiles').files];for(let i=0;i<files.length;i++){const f=files[i],path=`${state.user.id}/${c.id}-S1E${i+1}`;await upload(C.STORAGE_VIDEO_BUCKET,path,f,f.type);const r=await sb.from('episodes').insert({content_id:c.id,season_no:1,episode_no:i+1,title:`Episódio ${i+1}`,video_url:path});if(r.error)throw r.error;}}
+    return {contentId:c.id};
+  }catch(err){console.error('publishOnline:',err);throw err;}
+}
+async function publishLocal(o){let video=null;if(o.type==='Filme'){if(!o.videoFile)throw new Error('Selecione o vídeo.');video=await fileData(o.videoFile);}const book=o.book?await fileData(o.book):'';const id=uid();await lput('contents',{id,owner_id:state.user.id,ownerName:state.profile.name,type:o.type,title:o.title,description:o.desc,year:new Date().getFullYear(),price:o.price,free:o.price===0,cover:o.coverData,video,ebook:book,status:'active',created_at:Date.now()});return {contentId:id};}
+
+
+async function toggleFav(id){if(!state.user)return login();if(ONLINE){if(state.favorites.has(id)){await sb.from('favorites').delete().eq('user_id',state.user.id).eq('content_id',id);state.favorites.delete(id);}else{const r=await sb.from('favorites').insert({user_id:state.user.id,content_id:id});if(r.error)return toast('❌ '+r.error.message);state.favorites.add(id);}}else{const old=(await lget('favorites')).find(x=>x.userId===state.user.id&&String(x.contentId)===String(id));if(old)await ldel('favorites',old.id);else await lput('favorites',{id:uid(),userId:state.user.id,contentId:id});await loadData();}render();}
+async function share(id){const u=location.href.split('#')[0]+'#content='+id;try{await navigator.clipboard.writeText(u);toast('🔗 Link copiado.');}catch{prompt('Copie o link:',u);}}
+async function getEpisodes(id){if(!ONLINE)return [];const {data,error}=await sb.from('episodes').select('*').eq('content_id',id).order('season_no').order('episode_no');if(error){console.error('EPISODES:',error);throw error;}const rows=data||[];for(const e of rows){try{e.video_url=await signedVideoUrl(e.video_url);}catch(err){console.error('VIDEO URL:',err);e.video_url=null;}}return rows.filter(e=>e.video_url);}
+async function play(id){const x=state.contents.find(c=>String(c.id)===String(id));if(!x)return;if(x.type==='E-book'){if(x.ebook_url){if(/^https?:\/\//i.test(x.ebook_url))window.open(x.ebook_url,'_blank');else{const {data,error}=await sb.storage.from(C.STORAGE_EBOOK_BUCKET).createSignedUrl(x.ebook_url,3600);if(error)throw error;window.open(data.signedUrl,'_blank');}}else if(x.ebook)window.open(x.ebook,'_blank');else toast('E-book sem arquivo.');return;}let eps=[];try{eps=await getEpisodes(id);}catch(err){return toast('❌ Não foi possível carregar o vídeo.');}if(!ONLINE&&x.video)eps=[{id:'local',title:x.title,video_url:x.video}];if(!eps.length)return toast('❌ Vídeo não encontrado.');openModal(`<h2>▶️ ${esc(x.title)}</h2><div id="episodes">${eps.map((e,i)=>`<div class="episode"><span>${esc(e.title||'Episódio '+(i+1))}</span><button class="primary" data-ep="${i}">Assistir</button></div>`).join('')}</div><video class="video" id="player" controls playsinline></video><p class="small">O link do vídeo é temporário e seguro.</p>`);const v=$('#player');const selectEpisode=async i=>{const e=eps[i];if(!e?.video_url)return toast('Vídeo indisponível.');v.src=e.video_url;v.load();await v.play().catch(()=>{});};$$('[data-ep]').forEach(b=>b.onclick=()=>selectEpisode(Number(b.dataset.ep)));await selectEpisode(0);let lastSaved=-1;v.ontimeupdate=()=>{const sec=Math.floor(v.currentTime);if(sec>0&&sec%5===0&&sec!==lastSaved){lastSaved=sec;saveProgress(x.id,v.currentTime,v.duration||0);}};}
+async function saveProgress(id,seconds,duration){if(!state.user)return;if(ONLINE)await sb.from('progress').upsert({user_id:state.user.id,content_id:id,seconds,duration,updated_at:new Date().toISOString()});else await lput('progress',{id:state.user.id+'_'+id,userId:state.user.id,contentId:id,seconds,duration,updatedAt:Date.now()});}
+async function download(id){const x=state.contents.find(c=>String(c.id)===String(id));if(!x)return;if(!state.user)return login();if(ONLINE){const {data:eps}=await sb.from('episodes').select('video_url').eq('content_id',id).limit(1);const u=eps?.[0]?.video_url;if(!u)return toast('Sem vídeo para baixar.');const a=document.createElement('a');a.href=u;a.target='_blank';a.download=(x.title||'ima-filmes')+'.mp4';a.click();}else if(x.video){const a=document.createElement('a');a.href=x.video;a.download=(x.title||'ima-filmes')+'.mp4';a.click();}}
+
+async function login(){
+  openModal(`<div class="form"><h2>👤 ${ONLINE?'Entrar / Criar conta online':'Entrar / Criar conta'}</h2><label>Nome (para conta nova)</label><input id="ln" placeholder="Seu nome"><label>E-mail</label><input id="le" type="email" required><label>Senha</label><input id="lp" type="password" required minlength="6"><button id="loginSubmit" class="primary">Entrar / Criar conta</button><p class="small">${ONLINE?'A autenticação é feita pelo Supabase.':'Modo local: conta guardada neste navegador.'}</p></div>`);
+  $('#loginSubmit').onclick=async()=>{try{const name=$('#ln').value.trim()||'Utilizador',email=$('#le').value.trim().toLowerCase(),pass=$('#lp').value;if(!email)return toast('Digite o e-mail.');if(pass.length<6)return toast('A senha deve ter pelo menos 6 caracteres.');if(ONLINE){const r=await sb.auth.signUp({email,password:pass,options:{data:{name}}});if(r.error)throw r.error;if(r.data.session)await loadProfile(r.data.user);else toast('Conta criada. Confirme o e-mail se o projeto exigir confirmação.');}else await localLogin(name,email,pass);closeModal();await render();}catch(e){console.error(e);toast('❌ '+(e.message||'Falha no login.'));}};
+}
+function settingsPage(){$('#main').innerHTML=`<div class="sectionhead"><h1>⚙️ Configurações</h1></div><div class="panel form"><p><b>Modo:</b> ${ONLINE?'Online / Supabase':'Local'}</p><p><b>Conta:</b> ${esc(state.profile?.name||'Visitante')} ${state.profile?.role==='admin'?'🛡️ Administrador':''}</p>${state.user?'<button id="logout" class="secondary">Sair da conta</button>':'<button id="login" class="primary">Entrar / Criar conta</button>'}</div>`;if($('#logout'))$('#logout').onclick=async()=>{if(ONLINE)await sb.auth.signOut();else{localStorage.removeItem('ima_v9_local_user');state.user=null;state.profile=null;await render();}};if($('#login'))$('#login').onclick=login;}
+async function salesPage(){const mine=state.transactions.filter(t=>t.seller_id===state.user?.id);$('#main').innerHTML=`<div class="sectionhead"><h1>💰 Minhas vendas</h1></div><div class="stats"><div class="stat">Vendas<b>${mine.length}</b></div><div class="stat">Total<b>${mine.reduce((s,t)=>s+Number(t.amount||0),0).toLocaleString('pt-AO')} Kz</b></div></div><div class="panel"><table class="table"><tr><th>Conteúdo</th><th>Valor</th><th>Data</th></tr>${mine.map(t=>`<tr><td>${esc(t.contents?.title||t.title||'Conteúdo')}</td><td>${Number(t.amount||0).toLocaleString('pt-AO')} Kz</td><td>${new Date(t.created_at||t.createdAt).toLocaleString()}</td></tr>`).join('')||'<tr><td colspan="3">Sem vendas.</td></tr>'}</table></div>`;}
+async function libraryPage(){const a=[...state.progress.keys()].map(id=>state.contents.find(x=>String(x.id)===String(id))).filter(Boolean);$('#main').innerHTML=`<div class="sectionhead"><h1>📥 Minha Biblioteca</h1></div><div class="grid">${a.map(card).join('')||empty(state.user?'Comece a assistir para aparecer aqui.':'Entre na sua conta.')}</div>`;bind();}
+async function adminPage(){if(!state.profile||state.profile.role!=='admin'){if(!state.user){$('#main').innerHTML=`<div class="panel"><h2>🛡️ Administrador</h2><p>Entre com sua conta e atribua role=admin no Supabase.</p><button id="admLogin" class="primary">Entrar</button></div>`;$('#admLogin').onclick=login;return;}$('#main').innerHTML=`<div class="panel"><h2>🛡️ Acesso de administrador</h2><p>Esta conta ainda não é administradora.</p></div>`;return;}const users=ONLINE?(await sb.from('profiles').select('*')).data||[]:await lget('users');$('#main').innerHTML=`<div class="sectionhead"><h1>🛡️ Painel Administrador</h1></div><div class="stats"><div class="stat">Conteúdos<b>${state.contents.length}</b></div><div class="stat">Utilizadores<b>${users.length}</b></div><div class="stat">Transações<b>${state.transactions.length}</b></div></div><div class="panel"><table class="table"><tr><th>Título</th><th>Tipo</th><th>Status</th><th>Ação</th></tr>${state.contents.map(x=>`<tr><td>${esc(x.title)}</td><td>${esc(x.type)}</td><td>${esc(x.status)}</td><td><button class="danger" data-remove="${x.id}">Remover</button></td></tr>`).join('')||'<tr><td colspan="4">Sem conteúdos.</td></tr>'}</table></div>`;$$('[data-remove]').forEach(b=>b.onclick=()=>removeContent(b.dataset.remove));}
+async function removeContent(id){if(ONLINE){const r=await sb.from('contents').update({status:'removed'}).eq('id',id);if(r.error)return toast('❌ '+r.error.message);}else{const x=state.contents.find(x=>String(x.id)===String(id));if(x){x.status='removed';await lput('contents',x);}}toast('Conteúdo removido.');await render();}
+
+async function render(){try{await loadData();$('#userName').textContent=state.profile?.name||'Visitante';$$('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));switch(state.view){case'films':catalog('films');break;case'series':catalog('series');break;case'ebooks':catalog('ebooks');break;case'favorites':catalog('favorites');break;case'publish':await publishPage();break;case'library':await libraryPage();break;case'sales':await salesPage();break;case'settings':settingsPage();break;case'admin':await adminPage();break;default:homePage();}}catch(e){console.error(e);$('#main').innerHTML=`<div class="panel"><h2>❌ Erro ao carregar</h2><p>${esc(e.message||e)}</p><button class="secondary" onclick="location.reload()">Recarregar</button></div>`;}}
+
+$('#closeModal').onclick=closeModal;
+$('#modal').onclick=e=>{if(e.target.id==='modal')closeModal();};
+$('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');
+$('#settingsBtn').onclick=()=>nav('settings');
+$('#userBtn').onclick=()=>state.user?nav('settings'):login();
+$('#search').oninput=e=>{state.query=e.target.value;render();};
+$('#searchBtn').onclick=()=>render();
+$$('nav button').forEach(b=>b.onclick=()=>nav(b.dataset.view));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+(async()=>{try{await initAuth();await render();console.log('✅ '+APP+' iniciado:',ONLINE?'ONLINE':'LOCAL');}catch(e){console.error(e);$('#main').innerHTML=`<div class="panel"><h2>❌ Erro ao iniciar I.M.A FILMES</h2><p>${esc(e.message||e)}</p><p class="small">Verifique config.js e o acesso ao Supabase.</p></div>`;}})();
