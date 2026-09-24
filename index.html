@@ -1,40 +1,5 @@
-<!doctype html>
-<html lang="pt-AO">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#07111f">
-<meta name="description" content="I.M.A FILMES — Marketplace Digital">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AC%3C/text%3E%3C/svg%3E">
-<title>I.M.A FILMES V10.3.5</title>
-<meta name="application-version" content="10.3.5">
-<script>
-(function(){
-  window.IMA_APP_VERSION="10.3.5";
-  try{
-    var oldKeys=["IMA_FILMES_V9_LOCAL","IMA_FILMES_V10_LOCAL","IMA_FILMES_V10.1_LOCAL"];
-    oldKeys.forEach(function(k){ if(k!=="IMA_FILMES_V10_LOCAL") localStorage.removeItem(k); });
-  }catch(e){}
-  if("serviceWorker" in navigator){ navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});}).catch(function(){}); }
-  if(window.caches){ caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});}).catch(function(){}); }
-})();
-</script>
-<link rel="stylesheet" href="style.css?v=10.3.5">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=10.3.5"></script>
-</head>
-<body>
-<header class="topbar">
-<button id="menuBtn" class="icon-btn">☰</button>
-<div class="brand"><span>🎬</span><strong>I.M.A FILMES</strong></div>
-<div class="top-actions">
-<div class="search-wrap"><span>🔎</span><input id="search" placeholder="Pesquisar..."></div>
-<button id="settingsBtn" class="icon-btn">⚙️</button>
-<button id="profileBtn" class="icon-btn">👤</button>
-</div>
-</header>
-<div class="layout"><aside id="sidebar" class="sidebar"></aside><main id="main" class="main"></main></div>
-<div id="modal" class="modal hidden"><div class="modal-box"><button class="modal-close" data-close-modal>×</button><div id="modalBody"></div></div></div>
-<div id="toast" class="toast"></div>
-<script src="app.js?v=10.3.5"></script>
-</body></html>
+<!doctype html><html lang="pt-AO"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#07111f"><title>I.M.A FILMES V11</title><link rel="stylesheet" href="style.css"></head><body>
+<header class="top"><button id="menuBtn" class="icon">☰</button><div class="brand"><span>I.M.A</span> FILMES <b>V11</b></div><input id="search" placeholder="Pesquisar filmes, séries, anime, dorama..." autocomplete="off"><button id="loginBtn" class="btn ghost">Entrar</button></header>
+<div class="layout"><aside id="sidebar"><button data-view="home">🏠 Início</button><button data-view="films">🎬 Filmes</button><button data-view="series">📺 Séries</button><button data-view="anime">🍥 Anime</button><button data-view="dorama">🎭 Doramas</button><button data-view="ebooks">📚 E-books</button><button data-view="publish">⬆️ Publicar conteúdo</button><button data-view="library">❤️ Minha biblioteca</button><button data-view="settings">⚙️ Conta</button></aside><main id="main"></main></div>
+<div id="toast" class="toast"></div><div id="modal" class="modal hidden"><div id="modalBody" class="modalbox"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js?v=11.0.0"></script><script src="app.js?v=11.0.0"></script></body></html>
