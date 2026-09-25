@@ -41,3 +41,22 @@ create policy v11_videos_delete on storage.objects for delete to authenticated u
 drop policy if exists v11_videos_select_authenticated on storage.objects;
 create policy v11_videos_select_authenticated on storage.objects for select to authenticated using(bucket_id='videos');
 notify pgrst,'reload schema';
+
+-- V11.1: leitura segura do episódio para reprodução, evitando 403 do PostgREST em /episodes
+create or replace function public.v11_get_episode(p_content_id uuid)
+returns table(id uuid, content_id uuid, title text, season_no int, episode_no int, video_url text)
+language sql
+security definer
+set search_path = public
+as $$
+  select e.id, e.content_id, e.title, e.season_no, e.episode_no, e.video_url
+  from public.episodes e
+  join public.contents c on c.id=e.content_id
+  where e.content_id=p_content_id
+    and c.status='active'
+  order by e.season_no, e.episode_no
+  limit 1;
+$$;
+revoke all on function public.v11_get_episode(uuid) from public;
+grant execute on function public.v11_get_episode(uuid) to anon, authenticated;
+notify pgrst,'reload schema';
