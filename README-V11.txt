@@ -12,3 +12,6 @@ Correção principal da V11.1:
 - uploads usam caminhos privados e reprodução usa signed URL;
 - se o banco falhar depois do upload, a V11.1 tenta remover os arquivos e o registro criado;
 - usa os tipos e status compatíveis com a estrutura atual.
+
+
+V11.2: reprodução reforçada, URL assinada, diagnóstico do player e cache versionado 11.2.0.
