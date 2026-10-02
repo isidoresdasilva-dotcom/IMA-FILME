@@ -43,7 +43,78 @@ async function signed(bucket,path){
   if(!r.data?.signedUrl) throw Error('O Supabase não devolveu uma URL segura para o vídeo.');
   return r.data.signedUrl;
 }
-async function publishSubmit(e){e.preventDefault();if(state.publishing)return;state.publishing=true;const btn=$('#publishBtn'),status=$('#pubStatus');if(btn){btn.disabled=true;btn.textContent='⏳ Publicando...'}if(status)status.textContent='1/4 Preparando publicação...';let contentId=null,coverPath=null,videoPath=null;try{if(!state.user)throw Error('Sessão expirada. Entre novamente.');const type=$('#pubType')?.value,title=$('#pubTitle')?.value.trim(),desc=$('#pubDesc')?.value.trim()||'',price=Math.max(0,Number($('#pubPrice')?.value||0)),year=Number($('#pubYear')?.value||new Date().getFullYear()),cover=$('#pubCover')?.files?.[0],video=$('#pubVideo')?.files?.[0];if(!typeOk(type)||!title||!cover||!video)throw Error('Preencha tipo, título, capa e vídeo.');if(video.size>2*1024*1024*1024)throw Error('Vídeo acima de 2 GB.');const base=Date.now()+'-'+crypto.randomUUID(),safe=slug(title)||'conteudo';coverPath=state.user.id+'/'+base+'-'+safe+'.'+(cover.name.split('.').pop()||'jpg');videoPath=state.user.id+'/'+base+'-'+safe+'.'+(video.name.split('.').pop()||'mp4');if(status)status.textContent='2/4 Enviando capa...';await upload('capas',coverPath,cover);if(status)status.textContent='3/4 Enviando vídeo...';await upload('videos',videoPath,video);if(status)status.textContent='4/4 Gravando no banco...';const ins=await sb.from('contents').insert({owner_id:state.user.id,type,title,description:desc,year,price,free:price===0,cover_url:sb.storage.from('capas').getPublicUrl(coverPath).data.publicUrl,status:'active'}).select('id').single();if(ins.error)throw ins.error;contentId=ins.data.id;const ep=await sb.from('episodes').insert({content_id:contentId,season_no:1,episode_no:1,title,video_url:videoPath}).select('id').single();if(ep.error)throw ep.error;await loadContents();toast('✅ Publicado com sucesso!');await playContent(contentId,true)}catch(err){console.error('V11 publish:',err);if(contentId)await sb.from('contents').delete().eq('id',contentId);if(videoPath)await sb.storage.from('videos').remove([videoPath]);if(coverPath)await sb.storage.from('capas').remove([coverPath]);if(status)status.textContent='❌ '+(err.message||'Falha na publicação.');toast('❌ '+(err.message||'Falha na publicação.'))}finally{state.publishing=false;if(btn){btn.disabled=false;btn.textContent='🚀 Publicar conteúdo'}}}
+async function publishSubmit(e){
+  e.preventDefault();
+  if(state.publishing)return;
+  state.publishing=true;
+  const btn=$('#publishBtn'),status=$('#pubStatus');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Publicando...'}
+  if(status)status.textContent='1/5 Verificando sessão...';
+  let coverPath=null,videoPath=null,uploadedCover=false,uploadedVideo=false;
+  try{
+    if(!ONLINE)throw Error('Supabase não está configurado.');
+    const session=await sb.auth.getSession();
+    const user=session?.data?.session?.user||state.user;
+    if(!user)throw Error('Sessão não encontrada. Faça login novamente.');
+    state.user=user;
+
+    const type=$('#pubType')?.value;
+    const title=$('#pubTitle')?.value.trim();
+    const desc=$('#pubDesc')?.value.trim()||'';
+    const price=Math.max(0,Number($('#pubPrice')?.value||0));
+    const year=Number($('#pubYear')?.value||new Date().getFullYear());
+    const cover=$('#pubCover')?.files?.[0];
+    const video=$('#pubVideo')?.files?.[0];
+    if(!typeOk(type)||!title||!cover||!video)throw Error('Preencha tipo, título, capa e vídeo.');
+    if(video.size===0)throw Error('O arquivo de vídeo está vazio. Escolha outro vídeo.');
+    if(video.size>2*1024*1024*1024)throw Error('Vídeo acima de 2 GB.');
+
+    const base=Date.now()+'-'+crypto.randomUUID();
+    const safe=slug(title)||'conteudo';
+    const ext=(name, fallback)=>{const a=String(name||'').split('.');return (a.length>1?a.pop():fallback).toLowerCase().replace(/[^a-z0-9]/g,'')||fallback};
+    coverPath=user.id+'/'+base+'-'+safe+'.'+ext(cover.name,'jpg');
+    videoPath=user.id+'/'+base+'-'+safe+'.'+ext(video.name,'mp4');
+
+    if(status)status.textContent='2/5 Enviando capa...';
+    await upload('capas',coverPath,cover);
+    uploadedCover=true;
+
+    if(status)status.textContent='3/5 Enviando vídeo...';
+    await upload('videos',videoPath,video);
+    uploadedVideo=true;
+
+    if(status)status.textContent='4/5 Gravando conteúdo e episódio...';
+    const coverUrl=sb.storage.from('capas').getPublicUrl(coverPath).data.publicUrl;
+    const r=await sb.rpc('v11_publish_content',{
+      p_type:type,
+      p_title:title,
+      p_description:desc,
+      p_year:year,
+      p_price:price,
+      p_cover_url:coverUrl,
+      p_video_path:videoPath
+    });
+    if(r.error)throw Error('Banco recusou a publicação: '+r.error.message);
+    const contentId=Array.isArray(r.data)?r.data[0]?.id:r.data?.id;
+    if(!contentId)throw Error('O banco confirmou a operação, mas não devolveu o ID do conteúdo.');
+
+    if(status)status.textContent='5/5 Confirmando publicação...';
+    await loadContents();
+    toast('✅ Conteúdo publicado com sucesso!');
+    if(status)status.textContent='✅ Publicado. Abrindo o vídeo...';
+    await playContent(contentId,true);
+  }catch(err){
+    console.error('V11.4 publish:',err);
+    if(uploadedVideo&&videoPath)await sb.storage.from('videos').remove([videoPath]).catch(()=>{});
+    if(uploadedCover&&coverPath)await sb.storage.from('capas').remove([coverPath]).catch(()=>{});
+    const msg=err?.message||String(err)||'Falha desconhecida.';
+    if(status)status.textContent='❌ '+msg;
+    toast('❌ '+msg);
+  }finally{
+    state.publishing=false;
+    if(btn){btn.disabled=false;btn.textContent='🚀 Publicar conteúdo'}
+  }
+}
 async function playContent(id,auto=false){
   const x=state.contents.find(c=>String(c.id)===String(id));
   if(!x) return toast('Conteúdo não encontrado.');
@@ -75,7 +146,7 @@ async function playContent(id,auto=false){
     };
     if(start)start.addEventListener('click',startPlayback);
     if(auto) setTimeout(startPlayback,150);
-  }catch(e){console.error('V11.2 playContent:',e);toast('❌ Não foi possível reproduzir: '+(e.message||e));}
+  }catch(e){console.error('V11.4 playContent:',e);toast('❌ Não foi possível reproduzir: '+(e.message||e));}
 }
 function libraryPage(){$('#main').innerHTML=`<div class="head"><h1>❤️ Minha biblioteca</h1></div><div class="panel">A biblioteca de compras e favoritos será ligada ao módulo de vendas da V11. Os conteúdos publicados por si continuam disponíveis no catálogo.</div>`}
 function settingsPage(){$('#main').innerHTML=`<div class="head"><h1>⚙️ Conta</h1></div><div class="panel"><p><b>Utilizador:</b> ${esc(state.profile?.name||state.user?.email||'Visitante')}</p><p><b>Estado:</b> ${state.user?'Online':'Não autenticado'}</p>${state.user?'<button id="logout" class="btn danger">Sair</button>':''}</div>`;const b=$('#logout');if(b)b.addEventListener('click',async()=>{await sb.auth.signOut();state.user=null;state.profile=null;closeModal();navigate('home');updateHeader()},{once:true})}
