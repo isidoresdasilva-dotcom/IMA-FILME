@@ -1,1 +1,1 @@
-window.IMA_CONFIG={supabaseUrl:'https://ibamnkaeiadvutpreouf.supabase.co',supabaseKey:'sb_publishable_h1TgSCiFk8TMvyTkzl1v3A_Ki3R7lV4',appVersion:'11.4.0'};
+window.IMA_CONFIG={SUPABASE_URL:'https://ibamnkaeiadvutpreouf.supabase.co',SUPABASE_ANON_KEY:'sb_publishable_h1TgSCiFk8TMvyTkzl1v3A_Ki3R7lV4',STORAGE_VIDEO_BUCKET:'videos',STORAGE_COVER_BUCKET:'capas'};

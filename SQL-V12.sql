@@ -1,0 +1,10 @@
+create table if not exists public.contents (id uuid primary key default gen_random_uuid(), owner_id uuid not null references auth.users(id) on delete cascade, type text not null, title text not null, description text, year integer, price numeric default 0, free boolean default true, cover_url text, ebook_url text, status text not null default 'active', created_at timestamptz not null default now());
+create table if not exists public.episodes (id uuid primary key default gen_random_uuid(), content_id uuid not null references public.contents(id) on delete cascade, season_no integer not null default 1, episode_no integer not null default 1, title text, video_url text not null, created_at timestamptz not null default now());
+alter table public.contents enable row level security; alter table public.episodes enable row level security;
+drop policy if exists v12_contents_select on public.contents; create policy v12_contents_select on public.contents for select to anon,authenticated using(status='active' or owner_id=auth.uid());
+drop policy if exists v12_contents_insert on public.contents; create policy v12_contents_insert on public.contents for insert to authenticated with check(owner_id=auth.uid());
+drop policy if exists v12_contents_delete on public.contents; create policy v12_contents_delete on public.contents for delete to authenticated using(owner_id=auth.uid());
+drop policy if exists v12_episodes_select on public.episodes; create policy v12_episodes_select on public.episodes for select to authenticated,anon using(exists(select 1 from public.contents c where c.id=content_id and (c.status='active' or c.owner_id=auth.uid())));
+drop policy if exists v12_episodes_insert on public.episodes; create policy v12_episodes_insert on public.episodes for insert to authenticated with check(exists(select 1 from public.contents c where c.id=content_id and c.owner_id=auth.uid()));
+grant usage on schema public to anon,authenticated; grant select on public.contents,public.episodes to anon,authenticated; grant insert,delete on public.contents,public.episodes to authenticated;
+notify pgrst,'reload schema'; notify pgrst,'reload config';
